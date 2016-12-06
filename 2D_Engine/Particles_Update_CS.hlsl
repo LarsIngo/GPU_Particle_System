@@ -27,16 +27,17 @@ StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 RWStructuredBuffer<Particle> g_Target : register(u0);
 
 // 16x16
-[numthreads(128, 1, 1)]
+[numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
     Particle particle = g_Source[threadID.x];
 
     MetaData metaData = g_MetaBuffer[0];
     float dt = metaData.dt;
+    uint numParticles = metaData.numParticles;
 
-    for (uint i = 1; i < 1; ++i) {
-        particle.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f;
+    for (uint i = 0; i < 100; ++i) {
+        particle.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f + normalize(particle.velocity) * 0.0001f;
     }
 
 

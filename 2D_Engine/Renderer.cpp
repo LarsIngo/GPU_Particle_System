@@ -52,7 +52,7 @@ void Renderer::Render(Scene& scene) const
     // Render particles.
     mParticleRenderer->Bind(mBackBufferRTV, nullptr);
     glm::mat4 vpMatrix = glm::transpose(glm::perspectiveFovLH(45.f, (float)mWidth, (float)mHeight, 0.01f, 200.f) * scene.mCamera.mViewMatrix);
-    mParticleRenderer->Render(vpMatrix, scene.mCamera.mPosition, scene.mParticles->GetArrPointer(), scene.mParticles->Size());
+    mParticleRenderer->Render(vpMatrix, scene.mCamera.mPosition, scene);
     mParticleRenderer->Unbind();
 
     // Present to window.

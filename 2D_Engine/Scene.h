@@ -25,9 +25,6 @@ class Scene
         // Camera.
         Camera mCamera;
 
-        // Particles.
-        DynamicArray<Particle>* mParticles;
-
         // Max number paricles.
         unsigned int mMaxNumParticles;
 

@@ -21,7 +21,9 @@ class ParticleSystem
         ~ParticleSystem();
 
         // Bind pipeline.
-        void Bind();
+        // sourceBuffer Buffer to read from.
+        // targetBuffer Buffer to write to.
+        void Bind(ID3D11ShaderResourceView* sourceBuffer, ID3D11UnorderedAccessView* targetBuffer);
 
         // Ünbind pipeline.
         void Unbind();
@@ -52,7 +54,5 @@ class ParticleSystem
         ID3D11Device* mpDevice;
         ID3D11DeviceContext* mpDeviceContext;
         ID3D11ComputeShader* mParticleCS;
-        ID3D11ShaderResourceView* mParticleSourceBuffer;
-        ID3D11UnorderedAccessView* mParticleTargetBuffer;
         ID3D11ShaderResourceView* mMetaDataBuffer;
 };

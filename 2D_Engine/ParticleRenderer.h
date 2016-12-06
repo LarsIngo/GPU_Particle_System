@@ -9,6 +9,7 @@
 
 #include "Particle.h"
 #include "Camera.h"
+#include "Scene.h"
 
 class ParticleRenderer 
 {
@@ -33,9 +34,8 @@ class ParticleRenderer
         // Render particles.
         // vpMatix View projection matrix.
         // lensPostion Camera world position.
-        // particles Array of particles.
-        // numOfParticles Number of particles in particles array.
-        void Render(const glm::mat4& vpMatix, const glm::vec3& lensPostion, Particle* particles, unsigned int numOfParticles);
+        // scene Scene.
+        void Render(const glm::mat4& vpMatix, const glm::vec3& lensPostion, Scene& scene);
 
     private:
         // Initialise shaders and states.
@@ -52,8 +52,6 @@ class ParticleRenderer
         ID3D11DepthStencilState* mDepthSencilState;
         ID3D11RasterizerState* mRasterizerState;
 
-        ID3D11Buffer* mRendableParticlesBuffer;
-        unsigned int mMaxNumParticles;
         struct MetaData
         {
             glm::mat4 vpMatrix;

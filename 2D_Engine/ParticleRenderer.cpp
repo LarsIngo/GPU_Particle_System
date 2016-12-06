@@ -7,13 +7,10 @@ ParticleRenderer::ParticleRenderer(ID3D11Device* pDevice, ID3D11DeviceContext* p
 {
     mpDevice = pDevice;
     mpDeviceContext = pDeviceContext;
-    mMaxNumParticles = maxNumParticles;
 
     // Create pipeline.
     Initialise();
 
-    // Create particles buffer.
-    DxHelp::CreateVertexBuffer<Particle>(mpDevice, mMaxNumParticles, &mRendableParticlesBuffer);
     // Create meta data buffer.
     DxHelp::CreateCPUwriteGPUreadStructuredBuffer<MetaData>(mpDevice, 1, &mMetaDataBuffer);
 }
@@ -29,7 +26,6 @@ ParticleRenderer::~ParticleRenderer()
     mDepthSencilState->Release();
     mRasterizerState->Release();
 
-    mRendableParticlesBuffer->Release();
     mMetaDataBuffer->Release();
 }
 
@@ -67,24 +63,24 @@ void ParticleRenderer::Unbind()
     mpDeviceContext->OMSetRenderTargets(1, (ID3D11RenderTargetView**)p, nullptr);
 }
 
-void ParticleRenderer::Render(const glm::mat4& vpMatix, const glm::vec3& lensPostion, Particle* particles, unsigned int numOfParticles)
+void ParticleRenderer::Render(const glm::mat4& vpMatix, const glm::vec3& lensPostion, Scene& scene)
 {
-    assert(numOfParticles <= mMaxNumParticles);
-
     // Update buffers.
     mMetaData.vpMatrix = vpMatix;
     mMetaData.lensPosition = lensPostion;
     DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
-    DxHelp::WriteBuffer<Particle>(mpDeviceContext, particles, numOfParticles, mRendableParticlesBuffer);
 
     // Bind buffers.
     UINT vbStride = sizeof(Particle);
     UINT vbOffset = 0;
-    mpDeviceContext->IASetVertexBuffers(0, 1, &mRendableParticlesBuffer, &vbStride, &vbOffset);
+
+    scene.mParticlesGPUSwapBuffer->UpdateVertexBuffer();
+    ID3D11Buffer* vBuffer = scene.mParticlesGPUSwapBuffer->GetVertexBuffer();
+    mpDeviceContext->IASetVertexBuffers(0, 1, &vBuffer, &vbStride, &vbOffset);
     mpDeviceContext->GSSetShaderResources(0, 1, &mMetaDataBuffer);
 
     // Draw particles.
-    mpDeviceContext->Draw(numOfParticles, 0);
+    mpDeviceContext->Draw(scene.mMaxNumParticles, 0);
 }
 
 void ParticleRenderer::Initialise()

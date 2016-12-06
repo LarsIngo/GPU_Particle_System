@@ -16,7 +16,8 @@ class GPUSwapBuffer
         // pDevice Pointer to D3D11 device.
         // pDeviceContext Pointer to D3D11 device context.
         // numOfElements Number of elements of type elements T.
-        GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int numOfElements);
+        // initData Init data.
+        GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int numOfElements, T* initData = nullptr);
 
         // Destructor.
         ~GPUSwapBuffer();
@@ -30,45 +31,54 @@ class GPUSwapBuffer
         // Get target buffer (GPU write buffer).
         ID3D11UnorderedAccessView* GetTargetBuffer();
 
-        // Write buffer.
-        // data Data to write to GPU.
-        // numOfElements Number of elements in data array.
-        void Write(T* data, unsigned int numOfElements);
+        // Update vertex buffer (copy data from target buffer to vertex buffer).
+        void UpdateVertexBuffer();
 
-        // Read buffer.
-        // Return pointer to data.
-        T* Read();
+        // Get vertex buffer.
+        ID3D11Buffer* GetVertexBuffer();
 
     private:
         bool mState;
         ID3D11Device* mpDevice;
         ID3D11DeviceContext* mpDeviceContext;
+        ID3D11Buffer* mBuffers[2];
         ID3D11ShaderResourceView* mSourceBuffers[2];
         ID3D11UnorderedAccessView* mTargetBuffers[2];
+        ID3D11Buffer* mVertexBuffer;
 };
 
 template <typename T>
-inline GPUSwapBuffer<T>::GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int numOfElements)
+inline GPUSwapBuffer<T>::GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int numOfElements, T* initData)
 {
     mpDevice = pDevice;
     mpDeviceContext = pDeviceContext;
 
     mState = 0;
 
-    ID3D11Buffer* localBuffer[2];
+    // Create source and target buffers.
     {
         D3D11_BUFFER_DESC bDesc;
         ZeroMemory(&bDesc, sizeof(D3D11_BUFFER_DESC));
         bDesc.ByteWidth = sizeof(T) * numOfElements;
         bDesc.Usage = D3D11_USAGE_DEFAULT;
         bDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-        bDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
+        bDesc.CPUAccessFlags = 0;
         bDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
         bDesc.StructureByteStride = sizeof(T);
-        DxAssert(pDevice->CreateBuffer(&bDesc, NULL, &localBuffer[0]), S_OK);
-        DxAssert(pDevice->CreateBuffer(&bDesc, NULL, &localBuffer[1]), S_OK);
-    }
-    {
+        if (initData == nullptr)
+        {
+            DxAssert(pDevice->CreateBuffer(&bDesc, NULL, &mBuffers[0]), S_OK);
+            DxAssert(pDevice->CreateBuffer(&bDesc, NULL, &mBuffers[1]), S_OK);
+        }
+        else
+        {
+            D3D11_SUBRESOURCE_DATA sData;
+            ZeroMemory(&sData, sizeof(D3D11_SUBRESOURCE_DATA));
+            sData.pSysMem = initData;
+            DxAssert(pDevice->CreateBuffer(&bDesc, &sData, &mBuffers[0]), S_OK);
+            DxAssert(pDevice->CreateBuffer(&bDesc, &sData, &mBuffers[1]), S_OK);
+        }
+
         D3D11_SHADER_RESOURCE_VIEW_DESC srcDesc;
         ZeroMemory(&srcDesc, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
         srcDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -76,10 +86,9 @@ inline GPUSwapBuffer<T>::GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContex
         srcDesc.Buffer.FirstElement = 0;
         srcDesc.Buffer.ElementOffset = 0;
         srcDesc.Buffer.NumElements = numOfElements;
-        DxAssert(pDevice->CreateShaderResourceView(localBuffer[0], &srcDesc, &mSourceBuffers[0]), S_OK);
-        DxAssert(pDevice->CreateShaderResourceView(localBuffer[1], &srcDesc, &mSourceBuffers[1]), S_OK);
-    }
-    {
+        DxAssert(pDevice->CreateShaderResourceView(mBuffers[0], &srcDesc, &mSourceBuffers[0]), S_OK);
+        DxAssert(pDevice->CreateShaderResourceView(mBuffers[1], &srcDesc, &mSourceBuffers[1]), S_OK);
+
         D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
         ZeroMemory(&uavDesc, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
         uavDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -87,13 +96,15 @@ inline GPUSwapBuffer<T>::GPUSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContex
         uavDesc.Buffer.FirstElement = 0;
         uavDesc.Buffer.NumElements = numOfElements;
         uavDesc.Buffer.Flags = 0;
-        DxAssert(pDevice->CreateUnorderedAccessView(localBuffer[0], &uavDesc, &mTargetBuffers[0]), S_OK);
-        DxAssert(pDevice->CreateUnorderedAccessView(localBuffer[1], &uavDesc, &mTargetBuffers[1]), S_OK);
+        DxAssert(pDevice->CreateUnorderedAccessView(mBuffers[0], &uavDesc, &mTargetBuffers[0]), S_OK);
+        DxAssert(pDevice->CreateUnorderedAccessView(mBuffers[1], &uavDesc, &mTargetBuffers[1]), S_OK);
     }
-
-    localBuffer[0]->Release();
-    localBuffer[1]->Release();
-}
+    
+    // Create vertex buffer.
+    {
+        DxHelp::CreateVertexBuffer<Particle>(mpDevice, numOfElements, &mVertexBuffer);
+    }
+ }
 
 template <typename T>
 inline GPUSwapBuffer<T>::~GPUSwapBuffer()
@@ -102,6 +113,9 @@ inline GPUSwapBuffer<T>::~GPUSwapBuffer()
     mSourceBuffers[1]->Release();
     mTargetBuffers[0]->Release();
     mTargetBuffers[1]->Release();
+    mBuffers[0]->Release();
+    mBuffers[1]->Release();
+    mVertexBuffer->Release();
 }
 
 template <typename T>
@@ -113,7 +127,7 @@ inline void GPUSwapBuffer<T>::Swap()
 template <typename T>
 inline ID3D11ShaderResourceView* GPUSwapBuffer<T>::GetSourceBuffer()
 {
-    return mSourceBuffers[mState];
+    return mSourceBuffers[!mState];
 }
 
 template <typename T>
@@ -123,13 +137,13 @@ inline ID3D11UnorderedAccessView* GPUSwapBuffer<T>::GetTargetBuffer()
 }
 
 template <typename T>
-inline void GPUSwapBuffer<T>::Write(T* data, unsigned int numOfElements)
+inline void GPUSwapBuffer<T>::UpdateVertexBuffer()
 {
-    DxHelp::WriteStructuredBuffer<T>(mpDeviceContext, data, numOfElements, mSourceBuffers[mState]);
+    mpDeviceContext->CopyResource(mVertexBuffer, mBuffers[mState]);
 }
 
 template <typename T>
-inline T* GPUSwapBuffer<T>::Read()
+inline ID3D11Buffer* GPUSwapBuffer<T>::GetVertexBuffer()
 {
-    return DxHelp::ReadStructuredBuffer<T>(mpDeviceContext, mTargetBuffers[mState]);
+    return mVertexBuffer;
 }

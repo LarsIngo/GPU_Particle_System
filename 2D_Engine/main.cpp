@@ -25,7 +25,7 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
     // Max number of particles.
-    unsigned int maxNumParticles = 1000000;
+    unsigned int maxNumParticles = 4000000;
 
     // Create renderer.
     Renderer renderer(1024, 1024);
@@ -39,10 +39,10 @@ int main()
     ParticleSystem particleSystem(renderer.mDevice, renderer.mDeviceContext, maxNumParticles);
 
     // Set Frame Latency.
-    IDXGIDevice1 * pDXGIDevice;
-    DxAssert(renderer.mDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice), S_OK);
-    DxAssert(pDXGIDevice->SetMaximumFrameLatency(1), S_OK);
-    pDXGIDevice->Release();
+    //IDXGIDevice1 * pDXGIDevice;
+    //DxAssert(renderer.mDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice), S_OK);
+    //DxAssert(pDXGIDevice->SetMaximumFrameLatency(1), S_OK);
+    //pDXGIDevice->Release();
 
     long long lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     float dt = 0.f;
@@ -56,16 +56,17 @@ int main()
         camera.Update(20.f, dt, &renderer);
 
         // Particles update.
-        { PROFILE("PARTICLESYSTEMUPDATE");
+        //{ PROFILE("PARTICLESYSTEMUPDATE");
             particleSystem.Update(scene, dt);
-        }
+        //}
         
         // Renderer.
-        { PROFILE("RENDERER");
+        //{ PROFILE("RENDERER");
             renderer.Render(scene);
-        }
+        //}
 
-        std::cout << "Num particles: " << scene.mParticles->Size() << std::endl;
+        scene.mParticlesGPUSwapBuffer->Swap();
+        //std::cout << "Num particles: " << scene.mMaxNumParticles << std::endl;
 
     }
 

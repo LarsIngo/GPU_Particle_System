@@ -15,17 +15,15 @@ ParticleSystem::ParticleSystem(ID3D11Device* pDevice, ID3D11DeviceContext* pDevi
 ParticleSystem::~ParticleSystem()
 {
     mParticleCS->Release();
-    mParticleSourceBuffer->Release();
-    mParticleTargetBuffer->Release();
     mMetaDataBuffer->Release();
 }
 
-void ParticleSystem::Bind()
+void ParticleSystem::Bind(ID3D11ShaderResourceView* sourceBuffer, ID3D11UnorderedAccessView* targetBuffer)
 {
     mpDeviceContext->CSSetShader(mParticleCS, NULL, NULL);
-    mpDeviceContext->CSSetShaderResources(0, 1, &mParticleSourceBuffer);
+    mpDeviceContext->CSSetShaderResources(0, 1, &sourceBuffer);
     mpDeviceContext->CSSetShaderResources(1, 1, &mMetaDataBuffer);
-    mpDeviceContext->CSSetUnorderedAccessViews(0, 1, &mParticleTargetBuffer, NULL);
+    mpDeviceContext->CSSetUnorderedAccessViews(0, 1, &targetBuffer, NULL);
 }
 
 void ParticleSystem::Unbind()
@@ -39,43 +37,25 @@ void ParticleSystem::Unbind()
 
 void ParticleSystem::Update(Scene& scene, float dt)
 {
-    unsigned int numPartices = scene.mParticles->Size();
+    unsigned int numPartices = scene.mMaxNumParticles;
     assert(numPartices <= mMaxNumParticles);
 
-    // Sort.
-    //scene.mParticles->Sort();
-
     // Update meta buffer.
-
     mMetaData.dt = dt;
     mMetaData.numParticles = numPartices;
     mMetaData.worldPos = glm::vec3(0,0,0);
     mMetaData.active = true;
     DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
 
-    // Write particle buffer.
-    //DxHelp::WriteStructuredBuffer<Particle>(mpDeviceContext, scene.mParticles->GetArrPointer(), numPartices, mParticleSourceBuffer);
+    Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
 
-    Bind();
-
-    mpDeviceContext->Dispatch(numPartices / 128, 1, 1);
+    mpDeviceContext->Dispatch(numPartices / 256, 1, 1);
 
     Unbind();
-
-    //if (mFirstTime) 
-    //{
-    //    scene.mParticles->Delete();
-    //    mFirstTime = false;
-    //}
-
-    //// Read particle buffer.
-    //scene.mParticles->SetArrPointer(DxHelp::ReadStructuredBuffer<Particle>(mpDeviceContext, mParticleTargetBuffer), numPartices);
 }
 
 void ParticleSystem::Initialise()
 {
-    DxHelp::CreateCPUwriteGPUreadStructuredBuffer<Particle>(mpDevice, mMaxNumParticles, &mParticleSourceBuffer);
-    DxHelp::CreateCPUreadGPUwriteStructuredBuffer<Particle>(mpDevice, mMaxNumParticles, &mParticleTargetBuffer);
     DxHelp::CreateCPUwriteGPUreadStructuredBuffer<MetaData>(mpDevice, 1, &mMetaDataBuffer);
 
     ID3DBlob* errorBlob = nullptr;
