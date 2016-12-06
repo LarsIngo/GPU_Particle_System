@@ -1,7 +1,8 @@
 #pragma once
 
 template <typename T>
-class DynamicArray {
+class DynamicArray 
+{
 public:
     DynamicArray(const unsigned int capacity);
     ~DynamicArray();

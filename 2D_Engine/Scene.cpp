@@ -1,10 +1,17 @@
 #include "Scene.h"
 
-Scene::Scene()
-{
-    unsigned int numParticles = 400000;
-    mParticles = new DynamicArray<Particle>(numParticles);
+#include "DxHelp.h"
 
+Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int maxNumParticles)
+{
+    mpDevice = pDevice;
+    mpDeviceContext = pDeviceContext;
+
+    mMaxNumParticles = maxNumParticles;
+
+    // Populate particles array.
+    unsigned int numParticles = maxNumParticles;
+    mParticles = new DynamicArray<Particle>(numParticles);
     float r = 10.f;
     float s = r / std::cbrt(numParticles) * 2; // Works-ish.
     for (float z = -r; z <= r; z += s) 
@@ -24,10 +31,16 @@ Scene::Scene()
             }
         }
     }
+    // Create buffer.
+    mParticlesGPUSwapBuffer = new GPUSwapBuffer<Particle>(mpDevice, mpDeviceContext, mMaxNumParticles);
+
+    // Write particles to GPU.
+    mParticlesGPUSwapBuffer->Write(mParticles->GetArrPointer(), mParticles->Size());
 }
 
 Scene::~Scene()
 {
     //mParticles->Delete();
     delete mParticles;
+    delete mParticlesGPUSwapBuffer;
 }

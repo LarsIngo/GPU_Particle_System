@@ -13,7 +13,6 @@ class Particle
         ~Particle();
 
         // Ops.
-        //Particle& operator=(const Particle& other);
         const bool operator<(const Particle& other) const
         {
             return this->mPosition.x < other.mPosition.x;

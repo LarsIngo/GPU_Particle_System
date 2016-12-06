@@ -24,16 +24,19 @@ int main()
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-    // Create scene.
-    Scene scene;
-    Camera& camera = scene.mCamera;
-    camera.mPosition = glm::vec3(0.f, 0.f, -5.f);
-    
+    // Max number of particles.
+    unsigned int maxNumParticles = 1000000;
+
     // Create renderer.
     Renderer renderer(1024, 1024);
 
+    // Create scene.
+    Scene scene(renderer.mDevice, renderer.mDeviceContext, maxNumParticles);
+    Camera& camera = scene.mCamera;
+    camera.mPosition = glm::vec3(0.f, 0.f, -5.f);
+
     // Create particle system.
-    ParticleSystem particleSystem(renderer.mDevice, renderer.mDeviceContext, 1000000);
+    ParticleSystem particleSystem(renderer.mDevice, renderer.mDeviceContext, maxNumParticles);
 
     // Set Frame Latency.
     IDXGIDevice1 * pDXGIDevice;
