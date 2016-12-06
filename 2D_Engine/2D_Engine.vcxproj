@@ -150,6 +150,7 @@
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleRenderer.cpp" />
+    <ClCompile Include="ParticleSorter.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="RayTracer.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="GPUSwapBuffer.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ParticleRenderer.h" />
+    <ClInclude Include="ParticleSorter.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="RayTracer.h" />
@@ -202,6 +204,11 @@
       <FileType>Document</FileType>
     </None>
     <None Include="Particles_Update_CS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Particles_Sort_CS.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

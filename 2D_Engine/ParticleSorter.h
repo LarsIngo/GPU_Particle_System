@@ -5,19 +5,22 @@
 #include <d3d11.h>
 #include <d3dcompiler.inl>
 
+#include <glm/glm.hpp>
+
 #include "Particle.h"
+#include "Camera.h"
 #include "Scene.h"
 
-class ParticleSystem
+class ParticleSorter
 {
     public:
         // Constructor.
         // pDevice Pointer to D3D11 device.
         // pDeviceContext Pointer to D3D11 device context.
-        ParticleSystem(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
+        ParticleSorter(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 
         // Destructor.
-        ~ParticleSystem();
+        ~ParticleSorter();
 
         // Bind pipeline.
         // sourceBuffer Buffer to read from.
@@ -27,10 +30,9 @@ class ParticleSystem
         // Ünbind pipeline.
         void Unbind();
 
-        // Update particles.
-        // scene Scene to update.
-        // dt Delta time.
-        void Update(Scene& scene, float dt);
+        // Sort particles.
+        // scene Scene to sort.
+        void Sort(Scene& scene);
 
         // MetaData.
         struct MetaData
@@ -48,6 +50,6 @@ class ParticleSystem
 
         ID3D11Device* mpDevice;
         ID3D11DeviceContext* mpDeviceContext;
-        ID3D11ComputeShader* mParticleUpdateCS;
+        ID3D11ComputeShader* mParticleSortCS;
         ID3D11ShaderResourceView* mMetaDataBuffer;
 };
