@@ -12,7 +12,8 @@ class Profiler {
         ~Profiler();
 
     private:
-        long long start;
+        std::string mName;
+        long long mStart;
 };
 
 #define PROFILE(name) Profiler __profileInstance(name)

@@ -11,7 +11,9 @@
 #include <vector>
 #include <Windows.h>
 
-class Texture;
+#include "Scene.h"
+
+class ParticleRenderer;
 
 // Window call back procedure.
 static LRESULT CALLBACK WindowProcedure(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
@@ -30,6 +32,10 @@ class Renderer
 
         // Whether window is running of not.
         bool Running() const;
+
+        // Render scene.
+        // scene Scene to render.
+        void Render(Scene& scene) const;
 
         // Get key status.
         // vKey Windows virtual key.
@@ -67,7 +73,7 @@ class Renderer
         ID3D11DeviceContext* mDeviceContext;
 
         // Backbuffer. Used to render to window.
-        ID3D11UnorderedAccessView* mBackBufferUAV = nullptr;
+        ID3D11RenderTargetView* mBackBufferRTV = nullptr;
 
     private:
         // Initialise window, device and device context.
@@ -75,4 +81,7 @@ class Renderer
 
         // Mouse position.
         glm::vec2 mMousePosition;
+
+        // Particle renderer used to renderer particles.
+        ParticleRenderer* mParticleRenderer;
 };

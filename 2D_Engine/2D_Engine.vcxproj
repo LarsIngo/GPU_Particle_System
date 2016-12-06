@@ -146,19 +146,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="Particle.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MathFunctions.cpp" />
-    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ParticleRenderer.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="RayTracer.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Skeleton.cpp" />
-    <ClCompile Include="Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -179,24 +176,33 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Animation.h" />
-    <ClInclude Include="SpotLight.h" />
     <ClInclude Include="DxAssert.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Entity.h" />
-    <ClInclude Include="MathFunctions.h" />
-    <ClInclude Include="Model.h" />
-    <ClInclude Include="PointLight.h" />
+    <ClInclude Include="DxHelp.h" />
+    <ClInclude Include="DynamicArray.hpp" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleRenderer.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="RayTracer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="Skeleton.h" />
-    <ClInclude Include="SkinVertex.h" />
-    <ClInclude Include="Sphere.h" />
-    <ClInclude Include="Texture.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="Renderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Particles_Render_GS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Particles_Render_PS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Particles_Render_VS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Particles_Update_CS.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

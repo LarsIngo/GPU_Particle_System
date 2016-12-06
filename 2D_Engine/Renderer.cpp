@@ -1,20 +1,25 @@
 #include "Renderer.h"
 #include "DxAssert.h"
 #include "Texture.h"
+#include "ParticleRenderer.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 Renderer::Renderer(unsigned int width, unsigned int height) 
 {
     mWidth = width;
     mHeight = height;
     Initialise();
+    mParticleRenderer = new ParticleRenderer(mDevice, mDeviceContext, 1000000);
 }
 
 Renderer::~Renderer() 
 {
+    delete mParticleRenderer;
     mDevice->Release();
     mDeviceContext->Release();
     mSwapChain->Release();
-    mBackBufferUAV->Release();
+    mBackBufferRTV->Release();
 }
 
 bool Renderer::Running() const 
@@ -31,13 +36,28 @@ bool Renderer::Running() const
         }
         else
         {
-            // If there are no more messages to handle, run a frame 
+            // If there are no more messages to handle, run a frame.
             return true;
         }
     }
     return false;
 }
 
+void Renderer::Render(Scene& scene) const
+{
+    // Clear render target.
+    float clrColor[4] = { 0.f, 0.f, 0.f, 0.f };
+    mDeviceContext->ClearRenderTargetView(mBackBufferRTV, clrColor);
+
+    // Render particles.
+    mParticleRenderer->Bind(mBackBufferRTV, nullptr);
+    glm::mat4 vpMatrix = glm::transpose(glm::perspectiveFovLH(45.f, (float)mWidth, (float)mHeight, 0.01f, 200.f) * scene.mCamera.mViewMatrix);
+    mParticleRenderer->Render(vpMatrix, scene.mCamera.mPosition, scene.mParticles->GetArrPointer(), scene.mParticles->Size());
+    mParticleRenderer->Unbind();
+
+    // Present to window.
+    mSwapChain->Present(0, 0);
+}
 
 bool Renderer::GetKeyPressed(int vKey)
 {
@@ -51,18 +71,18 @@ glm::vec2 Renderer::GetMousePosition()
 
 bool Renderer::GetMouseInsideWindow()
 {
-    // get current mouse position in screen coords
+    // Get current mouse position in screen coords.
     POINT pos = { 0, 0 };
     if (GetCursorPos(&pos))
     {
-        // convert position to client window coords
+        // Convert position to client window coords.
         if (ScreenToClient(mHWND, &pos))
         {
-            // get window's client rect
+            // Get window's client rect.
             RECT rcClient = { 0 };
             GetClientRect(mHWND, &rcClient);
 
-            // if mouse cursor is inside rect
+            // If mouse cursor is inside rect.
             if (PtInRect(&rcClient, pos)) {
                 mMousePosition = glm::vec2(static_cast<float>(pos.x) / mWidth * 2.f - 1.f, -(static_cast<float>(pos.y) / mHeight * 2.f - 1.f));
                 return true;
@@ -115,7 +135,7 @@ void Renderer::Initialise()
     ShowWindow(mHWND, SW_SHOWDEFAULT);
     UpdateWindow(mHWND);
 
-    //We initiate the device, device context and swap chain.
+    // We initiate the device, device context and swap chain.
     DXGI_SWAP_CHAIN_DESC scDesc;
     scDesc.BufferDesc.Width = mWidth; 		// Using the window's size avoids weird effects. If 0 the window's client width is used.
     scDesc.BufferDesc.Height = mHeight;		// Using the window's size avoids weird effects. If 0 the window's client height is used.
@@ -126,7 +146,7 @@ void Renderer::Initialise()
     scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;					// Since the back buffer and window sizes matches, scaling doesn't matter.
     scDesc.SampleDesc.Count = 1;												// Disable multisampling.
     scDesc.SampleDesc.Quality = 0;												// Disable multisampling.
-    scDesc.BufferUsage = DXGI_USAGE_UNORDERED_ACCESS;						// The back buffer will be rendered to.
+    scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;						// The back buffer will be rendered to.
     scDesc.BufferCount = 1;							// We only have one back buffer.
     scDesc.OutputWindow = mHWND;			// Must point to the handle for the window used for rendering.
     scDesc.Windowed = true;							// Run in windowed mode. Fullscreen is covered in a later sample.
@@ -159,7 +179,7 @@ void Renderer::Initialise()
 
     ID3D11Texture2D* backBuffer;
     DxAssert(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)), S_OK);
-    DxAssert(mDevice->CreateUnorderedAccessView(backBuffer, nullptr, &mBackBufferUAV), S_OK);
+    DxAssert(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRTV), S_OK);
     backBuffer->Release();
 }
 

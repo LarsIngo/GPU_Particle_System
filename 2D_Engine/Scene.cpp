@@ -1,88 +1,33 @@
 #include "Scene.h"
 
-#include "SpotLight.h"
-#include "Entity.h"
-#include "Model.h"
-#include "PointLight.h"
-#include "Sphere.h"
-
-Scene::Scene() 
+Scene::Scene()
 {
+    unsigned int numParticles = 400000;
+    mParticles = new DynamicArray<Particle>(numParticles);
 
+    float r = 10.f;
+    float s = r / std::cbrt(numParticles) * 2; // Works-ish.
+    for (float z = -r; z <= r; z += s) 
+    {
+        for (float y = -r; y <= r; y += s)
+        {
+            for (float x = -r; x <= r; x += s)
+            {
+                if (mParticles->Size() < numParticles) {
+                    Particle particle = Particle();
+                    particle.mPosition = glm::vec3(x + 0.01f * y + 0.01f * z, y, z);
+                    particle.mScale = glm::vec2(0.1f, 0.1f);
+                    particle.mVelocity = glm::vec3(0.f, 1.f, 0.f);
+                    particle.mColor = glm::normalize(particle.mPosition);
+                    mParticles->Push(particle);
+                }
+            }
+        }
+    }
 }
 
-Scene::~Scene() 
+Scene::~Scene()
 {
-    for (Entity* e : mEntites)
-        delete e;
-    for (PointLight* p : mPointLights)
-        delete p;
-    for (SpotLight* d : mSpotLights)
-        delete d;
-    for (Sphere* s : mSpheres)
-        delete s;
-}
-
-Entity* Scene::CreateEntity()
-{
-    Entity* e = new Entity;
-    mEntites.push_back(e);
-    return e;
-}
-
-PointLight* Scene::CreatePointLight()
-{
-    PointLight* p = new PointLight;
-    mPointLights.push_back(p);
-    return p;
-}
-
-SpotLight* Scene::CreateSpotLight()
-{
-    SpotLight* d = new SpotLight;
-    mSpotLights.push_back(d);
-    return d;
-}
-
-
-Sphere* Scene::CreateSphere()
-{
-    Sphere* s = new Sphere;
-    mSpheres.push_back(s);
-    return s;
-}
-
-Camera* Scene::GetCamera()
-{
-    return &mCamera;
-}
-
-std::vector<Entity*>* Scene::GetEntities()
-{
-    return &mEntites;
-}
-
-std::vector<PointLight*>* Scene::GetPointLights()
-{
-    return &mPointLights;
-}
-
-std::vector<SpotLight*>* Scene::GetSpotLights()
-{
-    return &mSpotLights;
-}
-
-std::vector<Sphere*>* Scene::GetSpheres()
-{
-    return &mSpheres;
-}
-
-std::size_t Scene::AddTexture(std::wstring path)
-{
-    const auto& it = mTextureIDMap.find(path);
-    if (it != mTextureIDMap.end())
-        return it->second;
-    std::size_t index = mTextureIDMap.size();
-    mTextureIDMap[path] = index;
-    return index;
+    //mParticles->Delete();
+    delete mParticles;
 }

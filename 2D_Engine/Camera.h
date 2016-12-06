@@ -53,6 +53,7 @@ class Camera
         // View matrix.
         glm::mat4 mViewMatrix;
 
+    private:
         // Old mouse left button pressed status.
         bool mOldMouseLeftButtonPressed = false;
 
@@ -62,7 +63,6 @@ class Camera
         // New mouse position.
         glm::vec2 mNewMousePosition = glm::vec2(0.f, 0.f);
 
-    private:
         glm::mat4 CalculateOrientationMatrix() const;
         glm::mat4 CalculateViewMatrix() const;
 };
