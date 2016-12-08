@@ -192,7 +192,7 @@ int main()
 
 
     // Max number of particles.
-    unsigned int maxNumParticles = 16;
+    unsigned int maxNumParticles = pow(2,16);
 
     // Create renderer.
     Renderer renderer(1024, 1024);
@@ -200,7 +200,7 @@ int main()
     // Create scene.
     Scene scene(renderer.mDevice, renderer.mDeviceContext, maxNumParticles);
     Camera& camera = scene.mCamera;
-    camera.mPosition = glm::vec3(7.5f, 0.f, -15.f);
+    camera.mPosition = glm::vec3(0.f, 0.f, -5.f);
 
     // Create particle system.
     ParticleSystem particleSystem(renderer.mDevice, renderer.mDeviceContext);
@@ -218,7 +218,7 @@ int main()
     float dt = 0.f;
     float duration = 0.f;
     while (renderer.Running()) {
-        { PROFILE("FRAME");
+        { PROFILE("FRAME: " + std::to_string(maxNumParticles));
             long long newTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
             duration += dt = static_cast<float>(newTime - lastTime)/1000.f;
             lastTime = newTime;
@@ -234,8 +234,6 @@ int main()
         
             // Renderer.
             renderer.Render(scene);
-
-            MessageBox(NULL, "FRAME", "", 0);
         }
     }
 

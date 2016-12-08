@@ -26,6 +26,21 @@ StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 // Output.
 RWStructuredBuffer<Particle> g_Target : register(u0);
 
+// Check if particles overlaps.
+// Particles needs to be sorted along the x-axis.
+// Make shore self.position.x < other.position.x.
+// self This particle.
+// other Other particle.
+// Return whether particles intersects.
+bool Instersect(Particle self, Particle other);
+
+// Fucntion called on particle collision.
+// self This particle.
+// other Other particle.
+// metaData Meta data.
+// Return updated particle.
+Particle OnCollision(Particle self, Particle other, MetaData metaData);
+
 // 16x16
 [numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
@@ -34,29 +49,57 @@ void main(uint3 threadID : SV_DispatchThreadID)
     float dt = metaData.dt;
     uint numParticles = metaData.numParticles;
 
-    uint tID = threadID.x;
-    Particle self = g_Source[tID];
+    uint selfID = threadID.x;
+    Particle self = g_Source[selfID];
 
-    //for (uint i = 0; i < 100; ++i) 
-    //{
-    //    self.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f + normalize(self.velocity) * 0.0001f;
-    //}
+    //self.color = float3(0, 0.2f, 0);
 
-    //self.color = float3(tID / 32.f, 0.5f, 0.f);
+    for (int otherID = selfID + 1; otherID < numParticles; ++otherID)
+    {
+        Particle other = g_Source[otherID];
+        if (!Instersect(self, other))
+            break;
+        self = OnCollision(self, other, metaData);
+    }
 
-    g_Target[tID] = self;
+    for (int otherID = selfID - 1; otherID >= 0; --otherID)
+    {
+        Particle other = g_Source[otherID];
+        if (!Instersect(other, self))
+            break;
+        self = OnCollision(self, other, metaData);
+    }
+
+
+    self.position += self.velocity * dt;
+    self.velocity += self.velocity * dt / 2.f;
+    g_Target[selfID] = self;
 }
 
-// ! Ths < otr ! //
+// Assert self.pos.x < other.pos.x
 bool Instersect(Particle self, Particle other)
 {
-    float selfLen = self.scale.x * 2.f;
-    float otherLen = other.scale.x * 2.f;
-    float selfLeft = self.position.x - self.scale.x;
-    float otherLeft = other.position.x - other.scale.x;
-    //if (thsLeft)
-    //{
+    float selfRadius = self.scale.x;
+    float otherRadius = other.scale.x;
+    float selfLen = selfRadius * 2.f;
+    float otherLen = otherRadius * 2.f;
+    float selfLeft = self.position.x - selfRadius;
+    float otherLeft = other.position.x - otherRadius;
 
-    //}
-    return true;
+    if (selfLeft + selfLen > otherLeft) 
+    {
+        float len = selfRadius + otherRadius;
+        float3 selfToOtherVec = other.position - self.position;
+        float distance = selfToOtherVec.x * selfToOtherVec.x + selfToOtherVec.y * selfToOtherVec.y + selfToOtherVec.z * selfToOtherVec.z;
+        if (distance < len * len)
+            return true;
+    }
+    
+    return false;
+}
+
+Particle OnCollision(Particle self, Particle other, MetaData metaData)
+{
+    //self.color = float3(1.f, 0.f, 0.f);
+    return self;
 }

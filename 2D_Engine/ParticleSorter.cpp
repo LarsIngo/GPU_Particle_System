@@ -15,12 +15,14 @@ ParticleSorter::ParticleSorter(ID3D11Device* pDevice, ID3D11DeviceContext* pDevi
 ParticleSorter::~ParticleSorter()
 {
     mMetaDataBuffer->Release();
-    mParticleSortCS->Release();
+    mParticleSort01CS->Release();
+    mParticleSort02CS->Release();
+    mParticleSort03CS->Release();
 }
 
-void ParticleSorter::Bind(ID3D11ShaderResourceView* sourceBuffer, ID3D11UnorderedAccessView* targetBuffer)
+void ParticleSorter::Bind(ID3D11ShaderResourceView* sourceBuffer, ID3D11UnorderedAccessView* targetBuffer, ID3D11ComputeShader* computeShader)
 {
-    mpDeviceContext->CSSetShader(mParticleSortCS, NULL, NULL);
+    mpDeviceContext->CSSetShader(computeShader, NULL, NULL);
     mpDeviceContext->CSSetShaderResources(0, 1, &sourceBuffer);
     mpDeviceContext->CSSetShaderResources(1, 1, &mMetaDataBuffer);
     mpDeviceContext->CSSetUnorderedAccessViews(0, 1, &targetBuffer, NULL);
@@ -37,27 +39,82 @@ void ParticleSorter::Unbind()
 
 void ParticleSorter::Sort(Scene& scene)
 {
-    unsigned int numPartices = scene.mMaxNumParticles;
+    unsigned int numParticles = scene.mMaxNumParticles;
+    unsigned int dispDim = numParticles / 2;
+    unsigned int numThreads = RoofPow2(dispDim);
 
-    unsigned int step = 1;
-    for (unsigned int step = 1; step <= numPartices / 2; step *= 2)
+    mMetaData.numThreads = numThreads;
+    mMetaData.numParticles = numParticles;
+
+    // TONIC INIT
+    for (unsigned int step = 1; step <= numParticles / 2; step *= 2)
     {
         // Swap buffers.
         scene.mParticlesGPUSwapBuffer->Swap();
 
         // Update meta buffer.
-        mMetaData.numParticles = numPartices;
         mMetaData.step = step;
-        mMetaData.len = 4 * step;
         DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
 
-        Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
+        Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort01CS);
 
-        unsigned int dim = numPartices / 2;
-        mpDeviceContext->Dispatch(dim / 256 + 1, 1, 1);
+        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
 
         Unbind();
     }
+
+    // TONIC SWAP
+    for (unsigned int step = numParticles / 8; step >= 1; step /= 2)
+    {
+        // Swap buffers.
+        scene.mParticlesGPUSwapBuffer->Swap();
+
+        // Update meta buffer.
+        mMetaData.step = step;
+        DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
+
+        Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort02CS);
+
+        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
+
+        Unbind();
+    }
+
+    // TONIC MERGE
+    for (unsigned int step = numParticles / 2; step >= 1; step /= 2)
+    {
+        // Swap buffers.
+        scene.mParticlesGPUSwapBuffer->Swap();
+
+        // Update meta buffer.
+        mMetaData.step = step;
+        DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
+
+        Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort03CS);
+
+        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
+
+        Unbind();
+    }
+
+    //for (unsigned int step = 1; step <= numPartices / 2; step *= 2)
+    //{
+    //    // Swap buffers.
+    //    scene.mParticlesGPUSwapBuffer->Swap();
+
+    //    // Update meta buffer.
+    //    mMetaData.numParticles = numPartices;
+    //    mMetaData.step = step;
+    //    mMetaData.len = 4 * step;
+    //    DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
+
+    //    Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
+
+    //    unsigned int dim = numPartices / 2;
+    //    mpDeviceContext->Dispatch(dim / 256 + 1, 1, 1);
+
+    //    Unbind();
+    //}
 }
 
 void ParticleSorter::Initialise()
@@ -68,18 +125,47 @@ void ParticleSorter::Initialise()
     // Create compute shader.
     ID3DBlob* errorBlob = nullptr;
     ID3DBlob* shaderBlob = nullptr;
-    HRESULT hr = D3DCompileFromFile(L"Particles_Sort_CS.hlsl", nullptr, nullptr, "main", "cs_5_0", 0, NULL, &shaderBlob, &errorBlob);
+    HRESULT hr;
+        
+    hr = D3DCompileFromFile(L"Particles_Sort_01_CS.hlsl", nullptr, nullptr, "main", "cs_5_0", 0, NULL, &shaderBlob, &errorBlob);
     if (FAILED(hr))
     {
         char* errorMsg = (char*)errorBlob->GetBufferPointer();
         OutputDebugStringA(errorMsg);
         shaderBlob->Release();
     }
-    DxAssert(mpDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &mParticleSortCS), S_OK);
+    DxAssert(mpDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &mParticleSort01CS), S_OK);
+    shaderBlob->Release();
+
+    hr = D3DCompileFromFile(L"Particles_Sort_02_CS.hlsl", nullptr, nullptr, "main", "cs_5_0", 0, NULL, &shaderBlob, &errorBlob);
+    if (FAILED(hr))
+    {
+        char* errorMsg = (char*)errorBlob->GetBufferPointer();
+        OutputDebugStringA(errorMsg);
+        shaderBlob->Release();
+    }
+    DxAssert(mpDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &mParticleSort02CS), S_OK);
+    shaderBlob->Release();
+
+    hr = D3DCompileFromFile(L"Particles_Sort_03_CS.hlsl", nullptr, nullptr, "main", "cs_5_0", 0, NULL, &shaderBlob, &errorBlob);
+    if (FAILED(hr))
+    {
+        char* errorMsg = (char*)errorBlob->GetBufferPointer();
+        OutputDebugStringA(errorMsg);
+        shaderBlob->Release();
+    }
+    DxAssert(mpDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &mParticleSort03CS), S_OK);
     shaderBlob->Release();
 }
 
-void ParticleSorter::BitonicMergeSort()
+unsigned int ParticleSorter::RoofPow2(unsigned int v)
 {
-
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
 }

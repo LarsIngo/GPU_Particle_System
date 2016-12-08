@@ -208,7 +208,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Particles_Sort_CS.hlsl">
+    <None Include="Particles_Sort_01_CS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Particles_Sort_02_CS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Particles_Sort_03_CS.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
