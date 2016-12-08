@@ -57,6 +57,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
             otherID = tmp;
         }
 
+        // Clamp IDs inside array.
+        selfID = min(selfID, numParticles - 1);
+        otherID = min(otherID, numParticles - 1);
+
         Particle self = g_Source[selfID];
         Particle other = g_Source[otherID];
 
