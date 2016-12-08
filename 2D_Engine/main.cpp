@@ -82,11 +82,8 @@ void tonicMerge_swap(int g_Source[], int g_Target[], int numParticles, int stepL
 
         if (tID < numThreads)
         {
-
-            unsigned int threadsPerSet = numThreads / 2;
-
             bool setRightSide = tID >= numThreads / 2;
-            unsigned int tOffset = (tID % stepLen) + (tID / stepLen) * 2 * stepLen;
+            unsigned int tOffset = (tID % stepLen) + (tID / stepLen) * (2 * stepLen);
             unsigned int selfID =  tOffset;
             unsigned int otherID = selfID + stepLen;
 
@@ -124,7 +121,7 @@ void tonicMerge_merge(int g_Source[], int g_Target[], int numParticles, int step
 
         if (tID < numThreads)
         {
-            unsigned int tOffset = (tID % stepLen) + (tID / stepLen) * 2 * stepLen;
+            unsigned int tOffset = (tID % stepLen) + (tID / stepLen) * (2 * stepLen);
             unsigned int selfID = tOffset;
             unsigned int otherID = selfID + stepLen;
 
@@ -170,7 +167,7 @@ int main()
     bool init = true;
 
     // TONIC INIT
-    for (unsigned int step = 1; step < numThreads / 2; step *= 2)
+    for (unsigned int step = 1; step <= numThreads / 4; step *= 2)
     {
         memcpy(g_Source, g_Target, sizeof(int) * numThreads * 2);
         tonicMerge_init(g_Source, g_Target, numParticles, step, numThreads, init);
@@ -195,7 +192,7 @@ int main()
 
 
     // Max number of particles.
-    unsigned int maxNumParticles = 131072;
+    unsigned int maxNumParticles = pow(2, 16);
 
     // Create renderer.
     Renderer renderer(1024, 1024);
@@ -204,6 +201,7 @@ int main()
     Scene scene(renderer.mDevice, renderer.mDeviceContext, maxNumParticles);
     Camera& camera = scene.mCamera;
     camera.mPosition = glm::vec3(0.f, 0.f, -5.f);
+    scene.mActiveNumParticles = maxNumParticles;
 
     // Create particle system.
     ParticleSystem particleSystem(renderer.mDevice, renderer.mDeviceContext);
@@ -221,7 +219,7 @@ int main()
     float dt = 0.f;
     float duration = 0.f;
     while (renderer.Running()) {
-        { PROFILE("FRAME: " + std::to_string(maxNumParticles));
+        { PROFILE("FRAME: " + std::to_string(scene.mActiveNumParticles));
             long long newTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
             duration += dt = static_cast<float>(newTime - lastTime)/1000.f;
             lastTime = newTime;
@@ -237,6 +235,8 @@ int main()
         
             // Renderer.
             renderer.Render(scene);
+
+            //MessageBox(NULL, "", "", 0);
         }
     }
 

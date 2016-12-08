@@ -52,7 +52,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
     uint selfID = threadID.x;
     Particle self = g_Source[selfID];
 
-    //self.color = float3(0, 0.2f, 0);
+    self.color = float3(0, 0.2f, 0); // TMP
 
     for (int otherID = selfID + 1; otherID < numParticles; ++otherID)
     {
@@ -72,7 +72,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
 
     self.position += self.velocity * dt;
-    self.velocity += self.velocity * dt / 2.f;
+    //self.velocity += self.velocity * dt / 2.f;
     g_Target[selfID] = self;
 }
 
@@ -100,6 +100,6 @@ bool Instersect(Particle self, Particle other)
 
 Particle OnCollision(Particle self, Particle other, MetaData metaData)
 {
-    //self.color = float3(1.f, 0.f, 0.f);
+    self.color = float3(1.f, 0.f, 0.f); // TMP
     return self;
 }

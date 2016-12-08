@@ -39,15 +39,16 @@ void ParticleSorter::Unbind()
 
 void ParticleSorter::Sort(Scene& scene)
 {
-    unsigned int numParticles = scene.mMaxNumParticles;
-    unsigned int dispDim = numParticles / 2;
-    unsigned int numThreads = RoofPow2(dispDim);
+    unsigned int numParticles = scene.mActiveNumParticles;
 
-    mMetaData.numThreads = numThreads;
+    unsigned int numThreads = RoofPow2(numParticles) / 2;
+
     mMetaData.numParticles = numParticles;
+    mMetaData.numThreads = numThreads;
+    mMetaData.init = true;
 
     // TONIC INIT
-    for (unsigned int step = 1; step <= numParticles / 2; step *= 2)
+    for (unsigned int step = 1; step <= numThreads / 4; step *= 2)
     {
         // Swap buffers.
         scene.mParticlesGPUSwapBuffer->Swap();
@@ -58,13 +59,16 @@ void ParticleSorter::Sort(Scene& scene)
 
         Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort01CS);
 
-        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
+        mpDeviceContext->Dispatch(numThreads / 256 + 1, 1, 1);
 
         Unbind();
+
+        // Update init.
+        mMetaData.init = false;
     }
 
     // TONIC SWAP
-    for (unsigned int step = numParticles / 8; step >= 1; step /= 2)
+    for (unsigned int step = numThreads / 2; step >= 1; step /= 2)
     {
         // Swap buffers.
         scene.mParticlesGPUSwapBuffer->Swap();
@@ -75,13 +79,13 @@ void ParticleSorter::Sort(Scene& scene)
 
         Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort02CS);
 
-        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
+        mpDeviceContext->Dispatch(numThreads / 256 + 1, 1, 1);
 
         Unbind();
     }
 
     // TONIC MERGE
-    for (unsigned int step = numParticles / 2; step >= 1; step /= 2)
+    for (unsigned int step = numThreads; step >= 1; step /= 2)
     {
         // Swap buffers.
         scene.mParticlesGPUSwapBuffer->Swap();
@@ -92,29 +96,10 @@ void ParticleSorter::Sort(Scene& scene)
 
         Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer(), mParticleSort03CS);
 
-        mpDeviceContext->Dispatch(dispDim / 256 + 1, 1, 1);
+        mpDeviceContext->Dispatch(numThreads / 256 + 1, 1, 1);
 
         Unbind();
     }
-
-    //for (unsigned int step = 1; step <= numPartices / 2; step *= 2)
-    //{
-    //    // Swap buffers.
-    //    scene.mParticlesGPUSwapBuffer->Swap();
-
-    //    // Update meta buffer.
-    //    mMetaData.numParticles = numPartices;
-    //    mMetaData.step = step;
-    //    mMetaData.len = 4 * step;
-    //    DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
-
-    //    Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
-
-    //    unsigned int dim = numPartices / 2;
-    //    mpDeviceContext->Dispatch(dim / 256 + 1, 1, 1);
-
-    //    Unbind();
-    //}
 }
 
 void ParticleSorter::Initialise()

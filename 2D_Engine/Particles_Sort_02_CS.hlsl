@@ -34,21 +34,16 @@ void main(uint3 threadID : SV_DispatchThreadID)
 {
     uint tID = threadID.x;
     MetaData metaData = g_MetaBuffer[0];
-    uint numParticles = metaData.numParticles;
     uint stepLen = metaData.step;
+    uint numParticles = metaData.numParticles;
+    uint numThreads = metaData.numThreads;
 
-    if (tID < numParticles / 2)
+    if (tID < numThreads)
     {
-        uint setLen = 4 * stepLen;
-        uint threadsPerSet = setLen / 2;
-        bool setRightSide = tID % threadsPerSet >= threadsPerSet / 2;
-        uint tOffset = (tID % stepLen) + (tID / stepLen) * 2 * stepLen;
+        bool setRightSide = tID >= (numThreads / 2);
+        uint tOffset = (tID % stepLen) + (tID / stepLen) * (2 * stepLen);
         uint selfID = tOffset;
         uint otherID = selfID + stepLen;
-
-        // Clamp IDs inside array.
-        selfID = min(selfID, numParticles - 1);
-        otherID = min(otherID, numParticles - 1);
 
         if (setRightSide)
         {
@@ -74,8 +69,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
         //other.position.y = (float)otherID / numParticles;
         //self.color.x = (float)selfID / numParticles;
         //other.color.x = (float)otherID / numParticles;
-        //self.color.z = (float)tOffset / 1;
-        //other.color.z = (float)tOffset / 1;
 
         g_Target[selfID] = self;
         g_Target[otherID] = other;

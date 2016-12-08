@@ -32,7 +32,7 @@ class ParticleSorter
             unsigned int step;
             unsigned int numParticles;
             unsigned int numThreads;
-            float pad;
+            bool init;
         } mMetaData;
 
     private:

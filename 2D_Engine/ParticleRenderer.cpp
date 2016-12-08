@@ -80,7 +80,7 @@ void ParticleRenderer::Render(const glm::mat4& vpMatix, const glm::vec3& lensPos
     mpDeviceContext->GSSetShaderResources(0, 1, &mMetaDataBuffer);
 
     // Draw particles.
-    mpDeviceContext->Draw(scene.mMaxNumParticles, 0);
+    mpDeviceContext->Draw(scene.mActiveNumParticles, 0);
 }
 
 void ParticleRenderer::Initialise()

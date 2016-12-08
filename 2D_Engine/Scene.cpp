@@ -8,37 +8,65 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
     mpDeviceContext = pDeviceContext;
 
     mMaxNumParticles = maxNumParticles;
+    mActiveNumParticles = maxNumParticles;
 
     // Populate particles array.
-    unsigned int numParticles = maxNumParticles;
-    DynamicArray<Particle> mParticles(numParticles);
-    float r = 5.f;
-    float s = r / std::cbrt(numParticles) * 2; // Works-ish.
-    for (float z = -r; z <= r; z += s) 
+    DynamicArray<Particle> mParticles(mMaxNumParticles);
+    float space = 0.1f;
+    int yAxis, xAxis;
+    yAxis = xAxis = sqrt(mMaxNumParticles);
+
+    for (int y = 0; y < yAxis; ++y)
     {
-        for (float y = -r; y <= r; y += s)
+        for (int x = 0; x < xAxis; ++x)
         {
-            for (float x = -r; x <= r; x += s)
-            {
-                if (mParticles.Size() < numParticles) {
-                    Particle particle = Particle();
-                    particle.mPosition = glm::vec3(x + 0.01f * y + 0.01f * z, y, z);
-                    particle.mScale = glm::vec2(0.1f, 0.1f);
-                    particle.mVelocity = glm::vec3(0.f, 0.f, 0.f);
-                    particle.mColor = glm::abs(glm::normalize(particle.mPosition));
-                    mParticles.Push(particle);
-                }
-            }
+            Particle particle = Particle();
+            particle.mPosition = glm::vec3(x, 0.f, y) * space;
+            particle.mScale = glm::vec2(0.2f, 0.2f) * 2.f;
+            particle.mColor = glm::normalize(particle.mPosition);
+            particle.mVelocity = -particle.mColor;
+            mParticles.Push(particle);
         }
     }
+    mActiveNumParticles = yAxis * xAxis;
 
-    //for (int x = 0; x < numParticles; ++x)
+    //float r = 5.f;
+    //float s = r / std::cbrt(mMaxNumParticles) * 2; // Works-ish.
+    //for (float z = -r; z <= r; z += s) 
+    //{
+    //    for (float y = -r; y <= r; y += s)
+    //    {
+    //        for (float x = -r; x <= r; x += s)
+    //        {
+    //            if (mParticles.Size() < mMaxNumParticles) {
+    //                Particle particle = Particle();
+    //                particle.mPosition = glm::vec3(x + 0.01f * y + 0.01f * z, y, z);
+    //                particle.mScale = glm::vec2(0.2f, 0.2f);
+    //                particle.mVelocity = glm::vec3(0.f, 0.f, 0.f);
+    //                particle.mColor = glm::abs(glm::normalize(particle.mPosition));
+    //                mParticles.Push(particle);
+    //            }
+    //        }
+    //    }
+    //}
+
+    //for (int x = 0; x < mMaxNumParticles; ++x)
     //{
     //    Particle particle = Particle();
-    //    particle.mPosition = glm::vec3(x, 0, (float)x / numParticles * 12);
+    //    particle.mPosition = glm::vec3(x, 0, (float)x / mMaxNumParticles * 12);
     //    particle.mScale = glm::vec2(0.45f, 0.45f);
-    //    particle.mVelocity = glm::vec3(-((float)x/numParticles * (float)x / numParticles), 0.f, 0.f);
+    //    particle.mVelocity = glm::vec3(-((float)x/ mMaxNumParticles * (float)x / mMaxNumParticles), 0.f, 0.f);
     //    particle.mColor = glm::vec3(0.f, 0.2f, 0.f);
+    //    mParticles.Push(particle);
+    //}
+
+    //for (int x = 0; x < mMaxNumParticles; ++x)
+    //{
+    //    Particle particle = Particle();
+    //    particle.mPosition = glm::vec3(x, (float)x / mMaxNumParticles, 0);
+    //    particle.mScale = glm::vec2(0.45f, 0.45f);
+    //    particle.mVelocity = glm::vec3(0.f, 0.f, 0.f);
+    //    particle.mColor = glm::vec3((float)x / mMaxNumParticles, 0.2f, 0.f);
     //    mParticles.Push(particle);
     //}
 

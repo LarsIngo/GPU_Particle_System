@@ -1,3 +1,4 @@
+#define FLT_MAX 3.402823466e+38F;
 // Particle.
 struct Particle
 {
@@ -17,7 +18,7 @@ struct MetaData
     uint step;
     uint numParticles;
     uint numThreads;
-    float pad;
+    bool init;
 };
 // Meta buffer.
 StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
@@ -34,10 +35,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 {
     uint tID = threadID.x;
     MetaData metaData = g_MetaBuffer[0];
-    uint numParticles = metaData.numParticles;
     uint stepLen = metaData.step;
+    uint numParticles = metaData.numParticles;
+    uint numThreads = metaData.numThreads;
+    bool init = metaData.init;
 
-    if (tID < numParticles / 2)
+    if (tID < numThreads)
     {
         uint setLen = 4 * stepLen;
         uint threadsPerSet = setLen / 2;
@@ -57,12 +60,28 @@ void main(uint3 threadID : SV_DispatchThreadID)
             otherID = tmp;
         }
 
-        // Clamp IDs inside array.
-        selfID = min(selfID, numParticles - 1);
-        otherID = min(otherID, numParticles - 1);
+        Particle self;// = g_Source[0];
+        Particle other;// = g_Source[0];
 
-        Particle self = g_Source[selfID];
-        Particle other = g_Source[otherID];
+        if (selfID >= numParticles && init)
+        {
+            self.position.x = FLT_MAX;
+            self.color.z = 1.f;
+        }
+        else
+        {
+            self = g_Source[selfID];
+        }
+            
+        if (otherID >= numParticles && init)
+        {
+            other.position.x = FLT_MAX;
+            other.color.z = 1.f;
+        }
+        else
+        {
+            other = g_Source[otherID];
+        }
 
         // Compare other < self.
         if (Compare(other, self))
@@ -77,8 +96,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
         //other.position.y = (float)otherID / numParticles;
         //self.color.x = (float)selfID / numParticles;
         //other.color.x = (float)otherID / numParticles;
-        //self.color.z = (float)tOffset / 1;
-        //other.color.z = (float)tOffset / 1;
 
         g_Target[selfID] = self;
         g_Target[otherID] = other;

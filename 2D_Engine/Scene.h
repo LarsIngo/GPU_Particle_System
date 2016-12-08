@@ -28,6 +28,9 @@ class Scene
         // Max number paricles.
         unsigned int mMaxNumParticles;
 
+        // Active number particles.
+        unsigned int mActiveNumParticles;
+
         // Particles GPU swap buffer.
         GPUSwapBuffer<Particle>* mParticlesGPUSwapBuffer;
 
