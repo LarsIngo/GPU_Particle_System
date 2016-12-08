@@ -37,16 +37,18 @@ class ParticleSorter
         // MetaData.
         struct MetaData
         {
-            float dt;
+            unsigned int step;
             unsigned int numParticles;
-            glm::vec3 worldPos;
-            bool active;
-            float pad[2];
+            unsigned int len;
+            float pad;
         } mMetaData;
 
     private:
         // Initialise buffers and compute shader.
         void Initialise();
+
+        // Bitonic Merge Sort.
+        void BitonicMergeSort();
 
         ID3D11Device* mpDevice;
         ID3D11DeviceContext* mpDeviceContext;

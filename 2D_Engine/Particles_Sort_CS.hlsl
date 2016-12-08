@@ -11,14 +11,13 @@ struct Particle
 // Input.
 StructuredBuffer<Particle> g_Source : register(t0);
 
-// MetaData.
+// Meta data.
 struct MetaData 
 {
-    float dt;
+    uint step;
     uint numParticles;
-    float3 worldPos;
-    bool active;
-    float2 pad;
+    uint len;
+    float pad;
 };
 // Meta buffer.
 StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
@@ -26,34 +25,54 @@ StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 // Output.
 RWStructuredBuffer<Particle> g_Target : register(u0);
 
+// Compare self < other
+bool Compare(Particle self, Particle other);
+
 // 16x16
 [numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-    Particle particle = g_Source[threadID.x];
-
+    uint tID = threadID.x;
     MetaData metaData = g_MetaBuffer[0];
-    float dt = metaData.dt;
     uint numParticles = metaData.numParticles;
+    uint step = metaData.step;
 
-    for (uint i = 0; i < 100; ++i) {
-        particle.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f + normalize(particle.velocity) * 0.0001f;
+    if (tID < numParticles / (2 * step))
+    {
+        uint offset = 2 * step * tID;
+        uint selfID = offset;
+        uint otherID = selfID + step;
+
+        if (tID % 2 == 1)
+        {
+            // Swap ID.
+            uint tmp = selfID;
+            selfID = otherID;
+            otherID = tmp;
+        }
+
+        Particle self = g_Source[selfID];
+        Particle other = g_Source[otherID];
+
+        // Compate other < self.
+        if (Compare(other, self))
+        {
+            // Swap ID.
+            uint tmp = selfID;
+            selfID = otherID;
+            otherID = tmp;
+
+            // TMP
+            self.color.z = 1.f;
+            other.color.z = 1.f;
+        }
+
+        g_Target[selfID] = self;
+        g_Target[otherID] = other;
     }
-
-
-    g_Target[threadID.x] = particle;
 }
 
-// ! Ths < otr ! //
-bool Instersect(Particle ths, Particle otr)
+bool Compare(Particle lhs, Particle rhs)
 {
-    float thsLen = ths.scale.x * 2.f;
-    float otrLen = otr.scale.x * 2.f;
-    float thsLeft = ths.position.x - ths.scale.x;
-    float otrLeft = otr.position.x - otr.scale.x;
-    //if (thsLeft)
-    //{
-
-    //}
-    return true;
+    return lhs.color.x < rhs.color.x;
 }

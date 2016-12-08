@@ -37,16 +37,27 @@ void ParticleSorter::Unbind()
 
 void ParticleSorter::Sort(Scene& scene)
 {
-    // Swap buffers.
-    scene.mParticlesGPUSwapBuffer->Swap();
-
     unsigned int numPartices = scene.mMaxNumParticles;
 
-    Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
+    unsigned int step = 1;
+    for (unsigned int step = 1; step < 1; step *= 2.f)
+    {
+        // Swap buffers.
+        scene.mParticlesGPUSwapBuffer->Swap();
 
-    mpDeviceContext->Dispatch(numPartices / 256, 1, 1);
+        // Update meta buffer.
+        mMetaData.numParticles = numPartices;
+        mMetaData.step = step;
+        mMetaData.len = 4 * step;
+        DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
 
-    Unbind();
+        Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
+
+        unsigned int dim = numPartices / (2.f * step);
+        mpDeviceContext->Dispatch(dim / 256 + 1, 1, 1);
+
+        Unbind();
+    }
 }
 
 void ParticleSorter::Initialise()
@@ -66,4 +77,9 @@ void ParticleSorter::Initialise()
     }
     DxAssert(mpDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &mParticleSortCS), S_OK);
     shaderBlob->Release();
+}
+
+void ParticleSorter::BitonicMergeSort()
+{
+
 }

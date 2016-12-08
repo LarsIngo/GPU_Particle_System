@@ -11,7 +11,7 @@ struct Particle
 // Input.
 StructuredBuffer<Particle> g_Source : register(t0);
 
-// MetaData.
+// Meta data.
 struct MetaData 
 {
     float dt;
@@ -30,27 +30,30 @@ RWStructuredBuffer<Particle> g_Target : register(u0);
 [numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-    Particle particle = g_Source[threadID.x];
-
     MetaData metaData = g_MetaBuffer[0];
     float dt = metaData.dt;
     uint numParticles = metaData.numParticles;
 
-    for (uint i = 0; i < 100; ++i) {
-        particle.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f + normalize(particle.velocity) * 0.0001f;
-    }
+    uint tID = threadID.x;
+    Particle self = g_Source[tID];
 
+    //for (uint i = 0; i < 100; ++i) 
+    //{
+    //    self.position += normalize(g_Source[threadID.x + i].position + float3(0.01, 0.01, 0.01)) * 0.001f + normalize(self.velocity) * 0.0001f;
+    //}
 
-    g_Target[threadID.x] = particle;
+    //self.color = float3(tID / 32.f, 0.5f, 0.f);
+
+    g_Target[tID] = self;
 }
 
 // ! Ths < otr ! //
-bool Instersect(Particle ths, Particle otr)
+bool Instersect(Particle self, Particle other)
 {
-    float thsLen = ths.scale.x * 2.f;
-    float otrLen = otr.scale.x * 2.f;
-    float thsLeft = ths.position.x - ths.scale.x;
-    float otrLeft = otr.position.x - otr.scale.x;
+    float selfLen = self.scale.x * 2.f;
+    float otherLen = other.scale.x * 2.f;
+    float selfLeft = self.position.x - self.scale.x;
+    float otherLeft = other.position.x - other.scale.x;
     //if (thsLeft)
     //{
 

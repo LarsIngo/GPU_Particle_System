@@ -26,7 +26,7 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
     // Max number of particles.
-    unsigned int maxNumParticles = 1000000;
+    unsigned int maxNumParticles = 32;
 
     // Create renderer.
     Renderer renderer(1024, 1024);

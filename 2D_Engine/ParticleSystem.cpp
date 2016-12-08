@@ -49,7 +49,7 @@ void ParticleSystem::Update(Scene& scene, float dt)
 
     Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
 
-    mpDeviceContext->Dispatch(numPartices / 256, 1, 1);
+    mpDeviceContext->Dispatch(numPartices / 256 + 1, 1, 1);
 
     Unbind();
 }
