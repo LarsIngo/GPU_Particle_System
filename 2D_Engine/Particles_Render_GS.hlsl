@@ -20,7 +20,8 @@ struct MetaData
 {
     float4x4 vpMatrix;
     float3 lensPosition;
-    float pad;
+    float3 lensUpDirection;
+    float2 pad;
 };
 // Meta buffer.
 StructuredBuffer<MetaData> g_MetaBuffer : register(t0);
@@ -31,6 +32,7 @@ void main(point GSInput input[1], inout TriangleStream<GSOutput> TriStream)
     MetaData metaData = g_MetaBuffer[0];
     float4x4 vpMatrix = metaData.vpMatrix;
     float3 lensPosition = metaData.lensPosition;
+    float3 lensUpDirection = metaData.lensUpDirection;
 
     GSOutput output;
 
@@ -40,9 +42,9 @@ void main(point GSInput input[1], inout TriangleStream<GSOutput> TriStream)
     float3 color = input[0].color;
 
     float3 particleFrontDirection = normalize(lensPosition - worldPosition);
-    float3 paticleSideDirection = cross(particleFrontDirection, float3(0.f, 1.f, 0.f));
+    float3 paticleSideDirection = cross(particleFrontDirection, lensUpDirection);
     float3 paticleUpDirection = cross(paticleSideDirection, particleFrontDirection);
-    
+
     for (uint i = 0; i < 4; ++i)
     {
         float x = i == 1 || i == 3;

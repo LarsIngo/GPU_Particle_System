@@ -12,7 +12,7 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
 
     // Populate particles array.
     DynamicArray<Particle> mParticles(mMaxNumParticles);
-    float space = 0.1f;
+    float space = 0.5f;
     int yAxis, xAxis;
     yAxis = xAxis = sqrt(mMaxNumParticles);
 
@@ -22,9 +22,9 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
         {
             Particle particle = Particle();
             particle.mPosition = glm::vec3(x, 0.f, y) * space;
-            particle.mScale = glm::vec2(0.2f, 0.2f) * 2.f;
-            particle.mColor = glm::normalize(particle.mPosition);
-            particle.mVelocity = -particle.mColor;
+            particle.mScale = glm::vec2(0.2f, 0.2f);
+            particle.mColor = glm::vec3(0.f, 0.2f, 0.f);
+            particle.mVelocity = -glm::normalize(particle.mPosition);
             mParticles.Push(particle);
         }
     }

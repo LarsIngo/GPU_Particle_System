@@ -38,7 +38,7 @@ void ParticleSystem::Update(Scene& scene, float dt)
     // Swap buffers.
     scene.mParticlesGPUSwapBuffer->Swap();
 
-    unsigned int numPartices = scene.mMaxNumParticles;
+    unsigned int numPartices = scene.mActiveNumParticles;
 
     // Update meta buffer.
     mMetaData.dt = dt;

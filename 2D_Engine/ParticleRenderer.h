@@ -56,7 +56,8 @@ class ParticleRenderer
         {
             glm::mat4 vpMatrix;
             glm::vec3 lensPosition;
-            float pad;
+            glm::vec3 lensUpDirection;
+            float pad[2];
             
         } mMetaData;
         ID3D11ShaderResourceView* mMetaDataBuffer;

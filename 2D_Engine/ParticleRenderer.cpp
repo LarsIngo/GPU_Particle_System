@@ -68,6 +68,7 @@ void ParticleRenderer::Render(const glm::mat4& vpMatix, const glm::vec3& lensPos
     // Update buffers.
     mMetaData.vpMatrix = vpMatix;
     mMetaData.lensPosition = lensPostion;
+    mMetaData.lensUpDirection = scene.mCamera.mUpDirection;
     DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
 
     // Bind buffers.
