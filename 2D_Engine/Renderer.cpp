@@ -9,6 +9,7 @@ Renderer::Renderer(unsigned int width, unsigned int height)
 {
     mWidth = width;
     mHeight = height;
+    mClose = false;
     Initialise();
     mParticleRenderer = new ParticleRenderer(mDevice, mDeviceContext, 1000000);
 }
@@ -24,6 +25,10 @@ Renderer::~Renderer()
 
 bool Renderer::Running() const 
 {
+    if (mClose) {
+        PostQuitMessage(0);
+    }
+
     MSG windowMsg = { 0 };
 
     while (windowMsg.message != WM_QUIT)
@@ -41,6 +46,11 @@ bool Renderer::Running() const
         }
     }
     return false;
+}
+
+void Renderer::Close()
+{
+    mClose = true;
 }
 
 void Renderer::Render(Scene& scene) const

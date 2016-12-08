@@ -33,6 +33,9 @@ class Renderer
         // Whether window is running of not.
         bool Running() const;
 
+        // Close window.
+        void Close();
+
         // Render scene.
         // scene Scene to render.
         void Render(Scene& scene) const;
@@ -84,4 +87,7 @@ class Renderer
 
         // Particle renderer used to renderer particles.
         ParticleRenderer* mParticleRenderer;
+
+        // Window should close.
+        bool mClose;
 };

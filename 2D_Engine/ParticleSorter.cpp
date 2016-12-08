@@ -40,7 +40,7 @@ void ParticleSorter::Sort(Scene& scene)
     unsigned int numPartices = scene.mMaxNumParticles;
 
     unsigned int step = 1;
-    for (unsigned int step = 1; step < 1; step *= 2.f)
+    for (unsigned int step = 1; step <= numPartices / 2; step *= 2)
     {
         // Swap buffers.
         scene.mParticlesGPUSwapBuffer->Swap();
@@ -53,7 +53,7 @@ void ParticleSorter::Sort(Scene& scene)
 
         Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
 
-        unsigned int dim = numPartices / (2.f * step);
+        unsigned int dim = numPartices / 2;
         mpDeviceContext->Dispatch(dim / 256 + 1, 1, 1);
 
         Unbind();
