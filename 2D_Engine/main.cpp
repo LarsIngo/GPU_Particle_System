@@ -192,7 +192,7 @@ int main()
 
 
     // Max number of particles.
-    unsigned int maxNumParticles = pow(2, 16);
+    unsigned int maxNumParticles = pow(2, 15);
 
     // Create renderer.
     Renderer renderer(1024, 1024);
@@ -218,8 +218,10 @@ int main()
     long long lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     float dt = 0.f;
     float duration = 0.f;
+    unsigned int frameCounter = 0;
     while (renderer.Running()) {
-        { PROFILE("FRAME: " + std::to_string(scene.mActiveNumParticles));
+        frameCounter++;
+        { PROFILE("FRAME: " + std::to_string(scene.mActiveNumParticles), true);
             long long newTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
             duration += dt = static_cast<float>(newTime - lastTime)/1000.f;
             lastTime = newTime;

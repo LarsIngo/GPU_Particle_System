@@ -8,11 +8,8 @@ struct Particle
     float lifeTime;
 };
 
-// Input.
-StructuredBuffer<Particle> g_Source : register(t0);
-
 // Meta data.
-struct MetaData 
+struct MetaData
 {
     float dt;
     uint numParticles;
@@ -20,6 +17,20 @@ struct MetaData
     bool active;
     float2 pad;
 };
+
+// Boid data.
+struct BoidData
+{
+    float radius;
+    float3 center;
+    uint n;
+    float3 separation;
+    float3 velocity;
+};
+
+// Input.
+StructuredBuffer<Particle> g_Source : register(t0);
+
 // Meta buffer.
 StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 
@@ -34,53 +45,90 @@ bool XInstersect(Particle self, Particle other);
 
 // Check if particles overlaps.
 // Particles needs to be sorted along the x-axis.
-// self This particle.
-// other Other particle.
+// selfPos This particle position.
+// selfRadius This particle radius.
+// otherPos Other particle position.
+// otherRadius Other particle radius.
 // Return whether particles intersects.
-bool Instersect(Particle self, Particle other);
+float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherRadius);
 
-// Fucntion called on particle collision.
+// Function called on particle XIntersection.
 // self This particle.
 // other Other particle.
 // metaData Meta data.
 // Return updated particle.
-Particle OnCollision(Particle self, Particle other, MetaData metaData);
+void OnXIntersection(inout Particle self, Particle other, MetaData metaData, inout BoidData boidData);
+
+// Steer to avoid crowding local flockmates.
+float3 Separation(BoidData boidData);
+
+// Steer towards the average heading of local flockmates.
+float3 Alignment(BoidData boidData);
+
+// Steer to move toward the average position(center of mass) of local flockmates.
+float3 Cohesion(BoidData boidData);
 
 // 16x16
 [numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
+
+    // ----- Init ----- //
+    // Meta.
     MetaData metaData = g_MetaBuffer[0];
     float dt = metaData.dt;
     uint numParticles = metaData.numParticles;
 
+    // Self.
     uint selfID = threadID.x;
     Particle self = g_Source[selfID];
-
     self.color.x = 0.f; // TMP
 
-    //// ----- Collision ----- //
+    // Boid.
+    BoidData boidData;
+    boidData.radius = 50000000.f;
+    boidData.center = float3(0.f, 0.f, 0.f);
+    boidData.n = 0;
+    boidData.separation = float3(0.f, 0.f, 0.f);
+    boidData.velocity = float3(0.f, 0.f, 0.f);
+
+    // ----- Update ----- //
+    // Collision.
     for (int otherID = selfID + 1; otherID < numParticles; ++otherID)
     {
         Particle other = g_Source[otherID];
         if (!XInstersect(self, other))
             break;
-        if (Instersect(self, other))
-            self = OnCollision(self, other, metaData);
+        OnXIntersection(self, other, metaData, boidData);
     }
     for (int otherID = selfID - 1; otherID >= 0; --otherID)
     {
         Particle other = g_Source[otherID];
         if (!XInstersect(other, self))
             break;
-        if (Instersect(self, other))
-            self = OnCollision(self, other, metaData);
+        OnXIntersection(self, other, metaData, boidData);
     }
 
+    // ----- Result ----- //
+    // Boid.
+    if (boidData.n > 0)
+    {
+        // Steer to move toward the average position(center of mass) of local flockmates.
+        boidData.center /= (boidData.n * 100.f); 
+        // Steer towards the average heading of local flockmates.
+        boidData.velocity /= (boidData.n * 8.f);
+        // Update velocity.
+        //0.001f * (boidData.center + boidData.velocity + boidData.separation);
+        self.velocity += boidData.center + boidData.velocity + boidData.separation;
 
+        self.velocity = normalize(self.velocity);
+    }
+
+    // Self.
     self.position += self.velocity * dt;
-    //self.velocity += self.velocity * dt / 2.f;
     self.color.z = (float)selfID / numParticles;
+
+    // Final result.
     g_Target[selfID] = self;
 }
 
@@ -97,20 +145,48 @@ bool XInstersect(Particle self, Particle other)
     return selfLeft + selfLen > otherLeft;
 }
 
-// Assert self.pos.x < other.pos.x
-bool Instersect(Particle self, Particle other)
+float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherRadius)
 {
-    float selfRadius = self.scale.x;
-    float otherRadius = other.scale.x;
     float len = selfRadius + otherRadius;
-    float3 selfToOtherVec = other.position - self.position;
+    float3 selfToOtherVec = otherPos - selfPos;
     float distance = selfToOtherVec.x * selfToOtherVec.x + selfToOtherVec.y * selfToOtherVec.y + selfToOtherVec.z * selfToOtherVec.z;
     
-    return distance < len * len;
+    return distance - len * len;
 }
 
-Particle OnCollision(Particle self, Particle other, MetaData metaData)
+void OnXIntersection(inout Particle self, Particle other, MetaData metaData, inout BoidData boidData)
 {
-    self.color.x = 1.f; // TMP
-    return self;
+    float result = Instersect(self.position, boidData.radius, other.position, 0.f);
+    if (result <= 0.f)
+    {
+        self.color.x += 0.1f; // TMP
+
+        // ----- Boid ----- //
+        boidData.center += self.position;
+        boidData.velocity += self.velocity;
+        ++boidData.n;
+        // Steer to avoid crowding local flockmates.
+        float distance = sqrt(-result);
+        if (distance < 1.0f)
+            boidData.separation -= other.position - self.position;
+    }
+}
+
+float3 Separation(BoidData boidData)
+{
+    return float3(0.f, 0.f, 0.f);
+}
+
+float3 Alignment(BoidData boidData)
+{
+    return float3(0.f, 0.f, 0.f);
+}
+
+float3 Cohesion(BoidData boidData)
+{
+    if (boidData.n == 0)
+        return float3(0.f, 0.f, 0.f);
+
+    float factor = 100.f;
+    return boidData.center /= (boidData.n * factor);
 }

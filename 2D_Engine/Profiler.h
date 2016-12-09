@@ -6,7 +6,7 @@
 class Profiler {
     public:
         // Constructor.
-        Profiler(const std::string& name);
+        Profiler(const std::string& name, bool dump);
 
         // Destructor.
         ~Profiler();
@@ -14,6 +14,7 @@ class Profiler {
     private:
         std::string mName;
         long long mStart;
+        bool mDump;
 };
 
-#define PROFILE(name) Profiler __profileInstance(name)
+#define PROFILE(name, dump) Profiler __profileInstance(name, dump)
