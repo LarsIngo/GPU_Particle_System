@@ -192,7 +192,7 @@ int main()
 
 
     // Max number of particles.
-    unsigned int maxNumParticles = pow(2, 15);
+    unsigned int maxNumParticles = pow(2, 16);
 
     // Create renderer.
     Renderer renderer(1024, 1024);

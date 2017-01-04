@@ -27,10 +27,10 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
         for (int x = 0; x < xAxis; ++x)
         {
             Particle particle = Particle();
-            particle.mPosition = glm::vec3(x, dist(rng) / 1000.f, y) * space;
+            particle.mPosition = glm::vec3(x, 0.f, y) * space; // dist(rng) / 1000.f
             particle.mScale = glm::vec2(0.2f, 0.2f);
             particle.mColor = glm::vec3(0.f, 0.2f, 0.f);
-            particle.mVelocity = glm::vec3(dist(rng)/1000.f, dist(rng) / 1000.f, dist(rng) / 1000.f); // glm::normalize(particle.mPosition); /
+            particle.mVelocity = -glm::normalize(particle.mPosition); // glm::vec3(dist(rng)/1000.f, dist(rng) / 1000.f, dist(rng) / 1000.f); // glm::normalize(particle.mPosition); /
             mParticles.Push(particle);
         }
     }

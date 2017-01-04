@@ -1,3 +1,5 @@
+#define BATCHSIZE 32
+
 // Particle.
 struct Particle
 {
@@ -59,15 +61,6 @@ float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherR
 // Return updated particle.
 void OnXIntersection(inout Particle self, Particle other, MetaData metaData, inout BoidData boidData);
 
-// Steer to avoid crowding local flockmates.
-float3 Separation(BoidData boidData);
-
-// Steer towards the average heading of local flockmates.
-float3 Alignment(BoidData boidData);
-
-// Steer to move toward the average position(center of mass) of local flockmates.
-float3 Cohesion(BoidData boidData);
-
 // 16x16
 [numthreads(256, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
@@ -86,7 +79,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
     // Boid.
     BoidData boidData;
-    boidData.radius = 50000000.f;
+    boidData.radius = 1.0f;
     boidData.center = float3(0.f, 0.f, 0.f);
     boidData.n = 0;
     boidData.separation = float3(0.f, 0.f, 0.f);
@@ -94,35 +87,50 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
     // ----- Update ----- //
     // Collision.
-    for (int otherID = selfID + 1; otherID < numParticles; ++otherID)
+    for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
     {
-        Particle other = g_Source[otherID];
+        uint startID = min((selfID + 1) + batchID * BATCHSIZE, numParticles - 1);
+        Particle other = g_Source[startID];
         if (!XInstersect(self, other))
             break;
-        OnXIntersection(self, other, metaData, boidData);
+        uint endID = min(startID + BATCHSIZE, numParticles - 1);
+        [unroll(BATCHSIZE)]
+        for (int otherID = startID; otherID < endID; ++otherID)
+        {
+            other = g_Source[otherID];
+            OnXIntersection(self, other, metaData, boidData);
+        }
     }
-    for (int otherID = selfID - 1; otherID >= 0; --otherID)
+    for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
     {
-        Particle other = g_Source[otherID];
+        uint startID = max((selfID - 1) - batchID * BATCHSIZE, 0);
+        Particle other = g_Source[startID];
         if (!XInstersect(other, self))
             break;
-        OnXIntersection(self, other, metaData, boidData);
+        uint endID = max(startID - BATCHSIZE, 0);
+        [unroll(BATCHSIZE)]
+        for (int otherID = startID; otherID > endID; --otherID)
+        {
+            other = g_Source[otherID];
+            OnXIntersection(self, other, metaData, boidData);
+        }
     }
+
 
     // ----- Result ----- //
     // Boid.
-    if (boidData.n > 0)
-    {
-        // Steer to move toward the average position(center of mass) of local flockmates.
-        boidData.center /= (boidData.n * 100.f); 
-        // Steer towards the average heading of local flockmates.
-        boidData.velocity /= (boidData.n * 8.f);
-        // Update velocity.
-        //0.001f * (boidData.center + boidData.velocity + boidData.separation);
-        self.velocity += boidData.center + boidData.velocity + boidData.separation;
+    //if (boidData.n > 0)
+    //{
+    //    // Steer to move toward the average position(center of mass) of local flockmates.
+    //    boidData.center /= (boidData.n * 100.f); 
+    //    // Steer towards the average heading of local flockmates.
+    //    boidData.velocity /= (boidData.n * 8.f);
+    //    // Update velocity.
+    //    //0.001f * (boidData.center + boidData.velocity + boidData.separation);
+    //    self.velocity += boidData.center + boidData.velocity + boidData.separation;
 
-        self.velocity = normalize(self.velocity);
-    }
+    //    self.velocity = normalize(self.velocity);
+    //}
 
     // Self.
     self.position += self.velocity * dt;
@@ -156,37 +164,18 @@ float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherR
 
 void OnXIntersection(inout Particle self, Particle other, MetaData metaData, inout BoidData boidData)
 {
-    float result = Instersect(self.position, boidData.radius, other.position, 0.f);
+    float result = Instersect(self.position, self.scale.x, other.position, other.scale.x);
     if (result <= 0.f)
     {
         self.color.x += 0.1f; // TMP
 
-        // ----- Boid ----- //
-        boidData.center += self.position;
-        boidData.velocity += self.velocity;
-        ++boidData.n;
-        // Steer to avoid crowding local flockmates.
-        float distance = sqrt(-result);
-        if (distance < 1.0f)
-            boidData.separation -= other.position - self.position;
+        //// ----- Boid ----- //
+        //boidData.center += self.position;
+        //boidData.velocity += self.velocity;
+        //++boidData.n;
+        //// Steer to avoid crowding local flockmates.
+        //float distance = sqrt(-result);
+        //if (distance < 1.0f)
+        //    boidData.separation -= other.position - self.position;
     }
-}
-
-float3 Separation(BoidData boidData)
-{
-    return float3(0.f, 0.f, 0.f);
-}
-
-float3 Alignment(BoidData boidData)
-{
-    return float3(0.f, 0.f, 0.f);
-}
-
-float3 Cohesion(BoidData boidData)
-{
-    if (boidData.n == 0)
-        return float3(0.f, 0.f, 0.f);
-
-    float factor = 100.f;
-    return boidData.center /= (boidData.n * factor);
 }

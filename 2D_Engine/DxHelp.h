@@ -67,9 +67,9 @@ inline void DxHelp::CreateVertexBuffer(ID3D11Device* device, unsigned int numOfE
     D3D11_BUFFER_DESC buffDesc;
     ZeroMemory(&buffDesc, sizeof(D3D11_BUFFER_DESC));
     buffDesc.ByteWidth = sizeof(T) * numOfElements;
-    buffDesc.Usage = D3D11_USAGE_DYNAMIC;
+    buffDesc.Usage = D3D11_USAGE_DEFAULT;
     buffDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    buffDesc.CPUAccessFlags = 0;
     buffDesc.MiscFlags = 0;
     buffDesc.StructureByteStride = 0;
     DxAssert(device->CreateBuffer(&buffDesc, NULL, vBuffer), S_OK);
