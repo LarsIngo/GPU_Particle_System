@@ -1,4 +1,4 @@
-#define BATCHSIZE 32
+#define BATCHSIZE 128U
 
 // Particle.
 struct Particle
@@ -61,21 +61,23 @@ float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherR
 // Return updated particle.
 void OnXIntersection(inout Particle self, Particle other, MetaData metaData, inout BoidData boidData);
 
-// 16x16
-[numthreads(256, 1, 1)]
-void main(uint3 threadID : SV_DispatchThreadID)
-{
+groupshared Particle gs_particles[BATCHSIZE];
+groupshared Particle gs_first;
+groupshared Particle gs_last;
 
+// 16x16
+[numthreads(BATCHSIZE, 1, 1)]
+void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
+{
+    uint tID = threadID.x;
+    uint gtID = groupThreadID.x;
+    uint gID = groupID.x;
     // ----- Init ----- //
     // Meta.
     MetaData metaData = g_MetaBuffer[0];
     float dt = metaData.dt;
     uint numParticles = metaData.numParticles;
-
-    // Self.
-    uint selfID = threadID.x;
-    Particle self = g_Source[selfID];
-    self.color.x = 0.f; // TMP
+    uint pID = min(tID, numParticles - 1);
 
     // Boid.
     BoidData boidData;
@@ -85,36 +87,72 @@ void main(uint3 threadID : SV_DispatchThreadID)
     boidData.separation = float3(0.f, 0.f, 0.f);
     boidData.velocity = float3(0.f, 0.f, 0.f);
 
+    // Self.
+    Particle self = g_Source[pID];
+    self.color.x = 0.f; // TMP
+
+    if (gtID == 0)
+        gs_first = self;
+    if (gtID == BATCHSIZE - 1)
+        gs_last = self;
+    GroupMemoryBarrierWithGroupSync();
+
     // ----- Update ----- //
     // Collision.
-    for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
+    for (uint batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
     {
-        uint startID = min((selfID + 1) + batchID * BATCHSIZE, numParticles - 1);
-        Particle other = g_Source[startID];
-        if (!XInstersect(self, other))
-            break;
-        uint endID = min(startID + BATCHSIZE, numParticles - 1);
-        [unroll(BATCHSIZE)]
-        for (int otherID = startID; otherID < endID; ++otherID)
+        uint batchStartID = min(batchID * BATCHSIZE, numParticles - 1);
+        uint batchEndID = min(batchStartID + BATCHSIZE - 1, numParticles - 1);
+
+        //if (XInstersect(g_Source[batchEndID], gs_first) && XInstersect(gs_last, g_Source[batchStartID]) || gID == batchID)
+        //if (XInstersect(gs_last, g_Source[batchStartID]) || gID == batchID)
+        //if (XInstersect(g_Source[batchEndID], gs_first) || gID == batchID)
+        if (XInstersect(gs_last, g_Source[batchStartID]) || gID == batchID)
         {
-            other = g_Source[otherID];
-            OnXIntersection(self, other, metaData, boidData);
+            // Group Particle ID.
+            uint gpID = min(gtID + batchStartID, numParticles - 1);
+            // Load batch to shared memory.
+            gs_particles[gtID] = g_Source[gpID];
+            GroupMemoryBarrierWithGroupSync();
+
+            [unroll(BATCHSIZE)]
+            for (uint otherID = 0; otherID < BATCHSIZE; ++otherID)
+            {
+                OnXIntersection(self, gs_particles[otherID], metaData, boidData);
+            }
+            GroupMemoryBarrierWithGroupSync();  
         }
     }
-    for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
-    {
-        uint startID = max((selfID - 1) - batchID * BATCHSIZE, 0);
-        Particle other = g_Source[startID];
-        if (!XInstersect(other, self))
-            break;
-        uint endID = max(startID - BATCHSIZE, 0);
-        [unroll(BATCHSIZE)]
-        for (int otherID = startID; otherID > endID; --otherID)
-        {
-            other = g_Source[otherID];
-            OnXIntersection(self, other, metaData, boidData);
-        }
-    }
+
+    //uint selfID = pID;
+    //for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
+    //{
+    //    uint startID = min((selfID + 1) + batchID * BATCHSIZE, numParticles - 1);
+    //    Particle other = g_Source[startID];
+    //    if (!XInstersect(self, other))
+    //        break;
+    //    uint endID = min(startID + BATCHSIZE, numParticles - 1);
+    //    [unroll(BATCHSIZE)]
+    //    for (int otherID = startID; otherID < endID; ++otherID)
+    //    {
+    //        other = g_Source[otherID];
+    //        OnXIntersection(self, other, metaData, boidData);
+    //    }
+    //}
+    //for (int batchID = 0; batchID < numParticles / BATCHSIZE + 1; ++batchID)
+    //{
+    //    uint startID = max((selfID - 1) - batchID * BATCHSIZE, 0);
+    //    Particle other = g_Source[startID];
+    //    if (!XInstersect(other, self))
+    //        break;
+    //    uint endID = max(startID - BATCHSIZE, 0);
+    //    [unroll(BATCHSIZE)]
+    //    for (int otherID = startID; otherID > endID; --otherID)
+    //    {
+    //        other = g_Source[otherID];
+    //        OnXIntersection(self, other, metaData, boidData);
+    //    }
+    //}
 
 
     // ----- Result ----- //
@@ -134,10 +172,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
     // Self.
     self.position += self.velocity * dt;
-    self.color.z = (float)selfID / numParticles;
+    self.color.z = (float)tID / numParticles;
 
     // Final result.
-    g_Target[selfID] = self;
+    g_Target[pID] = self;
 }
 
 // Assert self.pos.x < other.pos.x
