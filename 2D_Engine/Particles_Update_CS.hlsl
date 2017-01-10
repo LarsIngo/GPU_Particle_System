@@ -105,7 +105,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
     // Collision.
     //[unroll(BATCHSIZE)]
     for (uint otherID = 0; otherID < BATCHSIZE; ++otherID)
-        if (pID != gID * BATCHSIZE + otherID)
+        if (pID != gID * BATCHSIZE + otherID && tID < numParticles)
             OnXIntersection(self, gs_particles[otherID], metaData, boidData);
     GroupMemoryBarrierWithGroupSync();
 
@@ -122,7 +122,8 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 
             //[unroll(BATCHSIZE)]
             for (uint otherID = 0; otherID < BATCHSIZE - 1; ++otherID)
-                OnXIntersection(self, gs_particles[otherID], metaData, boidData);
+                if (gpID + otherID < numParticles)
+                    OnXIntersection(self, gs_particles[otherID], metaData, boidData);
             GroupMemoryBarrierWithGroupSync();  
         }
     }
