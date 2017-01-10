@@ -19,9 +19,8 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
     std::vector<ParticleCloud> particleClouds;
 
     float space = 0.5f;
-    glm::vec3 origin = glm::vec3(0.f, 0.f, 0.f);
     int yAxis, xAxis;
-    yAxis = xAxis = sqrt(mMaxNumParticles);
+    yAxis = xAxis = sqrt(mMaxNumParticleClouds);
 
     std::default_random_engine rng(time(0));
     std::uniform_int_distribution<int> dist(-1000, 1000);
@@ -31,21 +30,30 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
     {
         for (int x = 0; x < xAxis; ++x)
         {
-            Particle particle = Particle();
-            particle.mPosition = origin + glm::vec3(x, 0.f, y) * space; // dist(rng) / 1000.f
-            particle.mScale = glm::vec2(0.2f, 0.2f) * 1.f;
-            particle.mColor = glm::vec3(0.f, 0.2f, 0.f);
-            particle.mVelocity = -glm::normalize(particle.mPosition - origin) * 4.f; // glm::vec3(dist(rng)/1000.f, dist(rng) / 1000.f, dist(rng) / 1000.f); // glm::normalize(particle.mPosition); /
-            //particle.mLifetime = -0.1f;
-            particles.push_back(particle);
-
             ParticleCloud particleCloud;
-            particleCloud.mPosition = particle.mPosition;
-            particleCloud.mRadius = particle.mScale.x;
-            particleCloud.mParticleStartID = index++;
-            particleCloud.mNumParticles = 1;
-            particleCloud.mVelocity = particle.mVelocity;
+            particleCloud.mPosition = glm::vec3(x, 0.f, y) * space; // dist(rng) / 1000.f
+            particleCloud.mRadius = 0.2f;
+            particleCloud.mNumParticles = 16;
+            particleCloud.mParticleStartID = index;
+            index += particleCloud.mNumParticles;
+            particleCloud.mVelocity = -glm::normalize(particleCloud.mPosition + glm::vec3(0.01f, 0.01f, 0.01f)) * 4.f;
+            particleCloud.mColor = glm::vec3(0.f, 0.2f, 0.f);
             particleClouds.push_back(particleCloud);
+
+            float random = (float)dist(rng) / 10000.f;
+            glm::vec3 pos = particleCloud.mPosition;
+            for (unsigned int i = 0; i < 16; ++i)
+            {
+                Particle particle;
+                pos += glm::vec3(1.f, 0.f, 1.f) * random;
+                particle.mPosition = pos + pos;
+                particle.mPosition.y = 5.f * ((float)i / particleCloud.mNumParticles);
+                particle.mScale = glm::vec2(0.2f, 0.2f) * 1.f;
+                particle.mColor = glm::vec3(i % 3, i % 2, 1.f);
+                //particle.mVelocity = glm::vec3(particleCloud.mVelocity.x, 0.f, particleCloud.mVelocity.z);
+                particle.mLifetime = 100.f;
+                particles.push_back(particle);
+            }
         }
     }
 
@@ -90,6 +98,14 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
     //}
 
     // Create buffer and init particle data.
+    if (particles.size() < mMaxNumParticles)
+        for (unsigned int i = particles.size(); i < mMaxNumParticles; ++i)
+            particles.push_back(Particle());
+    //if (particleClouds.size() < mMaxNumParticleClouds)
+    //    for (unsigned int i = 0; i < mMaxNumParticles - particleClouds.size(); ++i)
+    //        particleClouds.push_back(ParticleCloud());
+    assert(particles.size() == mMaxNumParticles);
+    assert(particleClouds.size() == mMaxNumParticleClouds);
     mParticlesGPUSwapBuffer = new GPUSwapBuffer<Particle>(mpDevice, mpDeviceContext, mMaxNumParticles, particles.data());
     mParticleCloudsGPUSwapBuffer = new GPUSwapBuffer<ParticleCloud>(mpDevice, mpDeviceContext, mMaxNumParticleClouds, particleClouds.data());
 }

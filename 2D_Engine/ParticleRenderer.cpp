@@ -3,7 +3,7 @@
 #include "DxAssert.h"
 #include "DxHelp.h"
 
-ParticleRenderer::ParticleRenderer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int maxNumParticles)
+ParticleRenderer::ParticleRenderer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
 {
     mpDevice = pDevice;
     mpDeviceContext = pDeviceContext;

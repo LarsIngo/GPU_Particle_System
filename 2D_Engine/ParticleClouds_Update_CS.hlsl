@@ -203,7 +203,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         //0.001f * (boidData.center + boidData.velocity + boidData.separation);
         //self.velocity += boidData.center + boidData.velocity + boidData.separation;
 
-        //self.velocity += boidData.separation + 0.01f * boidData.velocity;
+        //self.velocity += boidData.separation;// +0.01f * boidData.velocity;
 
         //self.velocity = normalize(self.velocity);
     }
@@ -217,7 +217,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
     {
         Particle particle = g_SourceParticles[i];
         particle.color = self.color;
-        particle.velocity = float3(0.f, 0.f, 0.f);
+        particle.velocity = self.velocity;
         g_TargetParticles[i] = particle;
     }
 

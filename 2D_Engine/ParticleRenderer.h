@@ -17,8 +17,7 @@ class ParticleRenderer
         // Constructor.
         // pDevice Pointer to D3D11 device.
         // pDeviceContext Pointer to D3D11 device context.
-        // maxNumParticles Max number of particles.
-        ParticleRenderer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int maxNumParticles);
+        ParticleRenderer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 
         // Destructor.
         ~ParticleRenderer();

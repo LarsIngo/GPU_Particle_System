@@ -11,7 +11,7 @@ Renderer::Renderer(unsigned int width, unsigned int height)
     mHeight = height;
     mClose = false;
     Initialise();
-    mParticleRenderer = new ParticleRenderer(mDevice, mDeviceContext, 1000000);
+    mParticleRenderer = new ParticleRenderer(mDevice, mDeviceContext);
 }
 
 Renderer::~Renderer() 
