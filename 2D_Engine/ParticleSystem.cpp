@@ -38,18 +38,16 @@ void ParticleSystem::Update(Scene& scene, float dt)
     // Swap buffers.
     scene.mParticlesGPUSwapBuffer->Swap();
 
-    unsigned int numPartices = scene.mActiveNumParticles;
+    unsigned int numParticles = scene.mMaxNumParticles;
 
     // Update meta buffer.
     mMetaData.dt = dt;
-    mMetaData.numParticles = numPartices;
-    mMetaData.worldPos = glm::vec3(0,0,0);
-    mMetaData.active = true;
+    mMetaData.numParticles = numParticles;
     DxHelp::WriteStructuredBuffer<MetaData>(mpDeviceContext, &mMetaData, 1, mMetaDataBuffer);
 
     Bind(scene.mParticlesGPUSwapBuffer->GetSourceBuffer(), scene.mParticlesGPUSwapBuffer->GetTargetBuffer());
 
-    mpDeviceContext->Dispatch(numPartices / 256 + 1, 1, 1);
+    mpDeviceContext->Dispatch(numParticles / 256 + 1, 1, 1);
 
     Unbind();
 }

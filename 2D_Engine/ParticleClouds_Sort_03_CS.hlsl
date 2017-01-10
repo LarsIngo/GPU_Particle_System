@@ -1,21 +1,22 @@
-// Particle.
-struct Particle
+// Particle cloud.
+struct ParticleCloud
 {
     float3 position;
-    float2 scale;
+    float radius;
     float3 color;
     float3 velocity;
-    float lifeTime;
+    float particleStartID;
+    uint numParticles;
 };
 
 // Input.
-StructuredBuffer<Particle> g_Source : register(t0);
+StructuredBuffer<ParticleCloud> g_Source : register(t0);
 
 // Meta data.
 struct MetaData 
 {
     uint step;
-    uint numParticles;
+    uint numClouds;
     uint numThreads;
     float pad;
 };
@@ -23,10 +24,7 @@ struct MetaData
 StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 
 // Output.
-RWStructuredBuffer<Particle> g_Target : register(u0);
-
-// Compare self < other
-bool Compare(Particle self, Particle other);
+RWStructuredBuffer<ParticleCloud> g_Target : register(u0);
 
 // 16x16
 [numthreads(256, 1, 1)]
@@ -35,7 +33,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
     uint tID = threadID.x;
     MetaData metaData = g_MetaBuffer[0];
     uint stepLen = metaData.step;
-    uint numParticles = metaData.numParticles;
+    uint numClouds = metaData.numClouds;
     uint numThreads = metaData.numThreads;
 
     if (tID < numThreads)
@@ -44,11 +42,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
         uint selfID = tOffset;
         uint otherID = selfID + stepLen;
 
-        Particle self = g_Source[selfID];
-        Particle other = g_Source[otherID];
+        ParticleCloud self = g_Source[selfID];
+        ParticleCloud other = g_Source[otherID];
 
         // Compare other < self.
-        if (Compare(other, self))
+        if (other.position.x < self.position.x)
         {
             // Swap ID.
             uint tmp = selfID;
@@ -64,9 +62,4 @@ void main(uint3 threadID : SV_DispatchThreadID)
         g_Target[selfID] = self;
         g_Target[otherID] = other;
     }
-}
-
-bool Compare(Particle lhs, Particle rhs)
-{
-    return lhs.position.x < rhs.position.x;
 }

@@ -149,8 +149,10 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ParticleCloud.cpp" />
+    <ClCompile Include="ParticleCloudSystem.cpp" />
     <ClCompile Include="ParticleRenderer.cpp" />
-    <ClCompile Include="ParticleSorter.cpp" />
+    <ClCompile Include="ParticleCloudSorter.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="RayTracer.cpp" />
@@ -183,8 +185,10 @@
     <ClInclude Include="DynamicArray.hpp" />
     <ClInclude Include="GPUSwapBuffer.h" />
     <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleCloud.h" />
+    <ClInclude Include="ParticleCloudSystem.h" />
     <ClInclude Include="ParticleRenderer.h" />
-    <ClInclude Include="ParticleSorter.h" />
+    <ClInclude Include="ParticleCloudSorter.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="RayTracer.h" />
@@ -208,15 +212,20 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Particles_Sort_01_CS.hlsl">
+    <None Include="ParticleClouds_Sort_01_CS.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Particles_Sort_02_CS.hlsl">
+    <None Include="ParticleClouds_Sort_02_CS.hlsl">
       <FileType>Document</FileType>
     </None>
-    <None Include="Particles_Sort_03_CS.hlsl">
+    <None Include="ParticleClouds_Sort_03_CS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ParticleClouds_Update_CS.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

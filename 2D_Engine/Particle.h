@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-// An particle.
+// A particle.
 class Particle 
 {
     public:
@@ -11,27 +11,6 @@ class Particle
 
         // Destructor.
         ~Particle();
-
-        // Ops.
-        const bool operator<(const Particle& other) const
-        {
-            return this->mPosition.x < other.mPosition.x;
-        }
-
-        const bool operator>(const Particle& other) const
-        {
-            return other < *this;
-        }
-
-        const bool operator<=(const Particle& other) const
-        {
-            return !(*this > other);
-        }
-
-        const bool operator>=(const Particle& other) const
-        {
-            return !(*this < other);
-        }
 
         // Position.
         glm::vec3 mPosition;
@@ -45,6 +24,6 @@ class Particle
         // Velocity.
         glm::vec3 mVelocity;
 
-        // Lifetime.
-        float mLifeTime;
+        // Lifetime. If lifetim is less then zero, particle is inactive and not rendered.
+        float mLifetime;
 };

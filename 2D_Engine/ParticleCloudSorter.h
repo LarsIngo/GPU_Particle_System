@@ -11,18 +11,18 @@
 #include "Camera.h"
 #include "Scene.h"
 
-class ParticleSorter
+class ParticleCloudSorter
 {
     public:
         // Constructor.
         // pDevice Pointer to D3D11 device.
         // pDeviceContext Pointer to D3D11 device context.
-        ParticleSorter(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
+        ParticleCloudSorter(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 
         // Destructor.
-        ~ParticleSorter();
+        ~ParticleCloudSorter();
 
-        // Sort particles.
+        // Sort clouds.
         // scene Scene to sort.
         void Sort(Scene& scene);
 
@@ -30,7 +30,7 @@ class ParticleSorter
         struct MetaData
         {
             unsigned int step;
-            unsigned int numParticles;
+            unsigned int numClouds;
             unsigned int numThreads;
             bool init;
         } mMetaData;
@@ -53,8 +53,8 @@ class ParticleSorter
 
         ID3D11Device* mpDevice;
         ID3D11DeviceContext* mpDeviceContext;
-        ID3D11ComputeShader* mParticleSort01CS;
-        ID3D11ComputeShader* mParticleSort02CS;
-        ID3D11ComputeShader* mParticleSort03CS;
+        ID3D11ComputeShader* mParticleCloudSort01CS;
+        ID3D11ComputeShader* mParticleCloudSort02CS;
+        ID3D11ComputeShader* mParticleCloudSort03CS;
         ID3D11ShaderResourceView* mMetaDataBuffer;
 };

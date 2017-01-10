@@ -1,22 +1,23 @@
 #define FLT_MAX 3.402823466e+38F;
-// Particle.
-struct Particle
+// Particle cloud.
+struct ParticleCloud
 {
     float3 position;
-    float2 scale;
+    float radius;
     float3 color;
     float3 velocity;
-    float lifeTime;
+    float particleStartID;
+    uint numParticles;
 };
 
 // Input.
-StructuredBuffer<Particle> g_Source : register(t0);
+StructuredBuffer<ParticleCloud> g_Source : register(t0);
 
 // Meta data.
 struct MetaData 
 {
     uint step;
-    uint numParticles;
+    uint numClouds;
     uint numThreads;
     bool init;
 };
@@ -24,10 +25,7 @@ struct MetaData
 StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
 
 // Output.
-RWStructuredBuffer<Particle> g_Target : register(u0);
-
-// Compare self < other
-bool Compare(Particle self, Particle other);
+RWStructuredBuffer<ParticleCloud> g_Target : register(u0);
 
 // 16x16
 [numthreads(256, 1, 1)]
@@ -36,7 +34,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
     uint tID = threadID.x;
     MetaData metaData = g_MetaBuffer[0];
     uint stepLen = metaData.step;
-    uint numParticles = metaData.numParticles;
+    uint numClouds = metaData.numClouds;
     uint numThreads = metaData.numThreads;
     bool init = metaData.init;
 
@@ -60,10 +58,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
             otherID = tmp;
         }
 
-        Particle self;// = g_Source[0];
-        Particle other;// = g_Source[0];
+        ParticleCloud self;// = g_Source[0];
+        ParticleCloud other;// = g_Source[0];
 
-        if (selfID >= numParticles && init)
+        if (selfID >= numClouds && init)
         {
             self.position.x = FLT_MAX;
             self.color.z = 1.f;
@@ -73,7 +71,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
             self = g_Source[selfID];
         }
             
-        if (otherID >= numParticles && init)
+        if (otherID >= numClouds && init)
         {
             other.position.x = FLT_MAX;
             other.color.z = 1.f;
@@ -84,7 +82,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
         }
 
         // Compare other < self.
-        if (Compare(other, self))
+        if (other.position.x < self.position.x)
         {
             // Swap ID.
             uint tmp = selfID;
@@ -100,9 +98,4 @@ void main(uint3 threadID : SV_DispatchThreadID)
         g_Target[selfID] = self;
         g_Target[otherID] = other;
     }
-}
-
-bool Compare(Particle lhs, Particle rhs)
-{
-    return lhs.position.x < rhs.position.x;
 }

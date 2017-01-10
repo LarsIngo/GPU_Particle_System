@@ -5,27 +5,31 @@
 #include <d3d11.h>
 #include <d3dcompiler.inl>
 
-#include "Particle.h"
+#include "ParticleCloud.h"
 #include "Scene.h"
 
-class ParticleSystem
+class ParticleCloudSystem
 {
     public:
         // Constructor.
         // pDevice Pointer to D3D11 device.
         // pDeviceContext Pointer to D3D11 device context.
-        ParticleSystem(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
+        ParticleCloudSystem(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 
         // Destructor.
-        ~ParticleSystem();
+        ~ParticleCloudSystem();
 
         // Bind pipeline.
         // sourceBuffer Buffer to read from.
+        // numSRVs Number of srcBuffers.
         // targetBuffer Buffer to write to.
-        void Bind(ID3D11ShaderResourceView* sourceBuffer, ID3D11UnorderedAccessView* targetBuffer);
+        // numUAVs Number of trgBuffers.
+        void Bind(ID3D11ShaderResourceView** sourceBuffer, unsigned int numSRVs, ID3D11UnorderedAccessView** targetBuffer, unsigned int numUAVs);
 
-        // Ünbind pipeline.
-        void Unbind();
+        // Unbind pipeline.
+        // numSRVs Number of srcBuffers.
+        // numUAVs Number of trgBuffers.
+        void Unbind(unsigned int numSRVs, unsigned int numUAVs);
 
         // Update particles.
         // scene Scene to update.
@@ -36,7 +40,7 @@ class ParticleSystem
         struct MetaData
         {
             float dt;
-            unsigned int numParticles;
+            unsigned int numClouds;
             float pad[2];
         } mMetaData;
 
