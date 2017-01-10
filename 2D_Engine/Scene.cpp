@@ -16,6 +16,7 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
     // Populate particles array.
     DynamicArray<Particle> mParticles(mMaxNumParticles);
     float space = 0.5f;
+    glm::vec3 origin = glm::vec3(0.f, 0.f, 0.f);
     int yAxis, xAxis;
     yAxis = xAxis = sqrt(mMaxNumParticles);
 
@@ -27,10 +28,10 @@ Scene::Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigne
         for (int x = 0; x < xAxis; ++x)
         {
             Particle particle = Particle();
-            particle.mPosition = glm::vec3(x, 0.f, y) * space; // dist(rng) / 1000.f
-            particle.mScale = glm::vec2(0.2f, 0.2f);
+            particle.mPosition = origin + glm::vec3(x, 0.f, y) * space; // dist(rng) / 1000.f
+            particle.mScale = glm::vec2(0.2f, 0.2f) * 1.f;
             particle.mColor = glm::vec3(0.f, 0.2f, 0.f);
-            particle.mVelocity = -glm::normalize(particle.mPosition); // glm::vec3(dist(rng)/1000.f, dist(rng) / 1000.f, dist(rng) / 1000.f); // glm::normalize(particle.mPosition); /
+            particle.mVelocity = -glm::normalize(particle.mPosition - origin) * 4.f; // glm::vec3(dist(rng)/1000.f, dist(rng) / 1000.f, dist(rng) / 1000.f); // glm::normalize(particle.mPosition); /
             mParticles.Push(particle);
         }
     }
