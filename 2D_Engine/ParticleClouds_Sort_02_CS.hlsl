@@ -7,6 +7,10 @@ struct ParticleCloud
     float3 velocity;
     float particleStartID;
     uint numParticles;
+    uint firstID;
+    uint lastID;
+    float timer;
+    float spawntime;
 };
 
 // Input.

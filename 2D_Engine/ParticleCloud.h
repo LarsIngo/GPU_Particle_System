@@ -30,4 +30,16 @@ class ParticleCloud
 
         // Number of particles.
         unsigned int mNumParticles;
+
+        // First particle index.
+        unsigned int mFirstID;
+
+        // Last particle index.
+        unsigned int mLastID;
+
+        // Timer.
+        float mTimer;
+
+        // Timestamp to spawn particles.
+        float mSpawntime;
 };

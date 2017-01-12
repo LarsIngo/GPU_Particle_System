@@ -29,7 +29,7 @@ int main()
 
     // Max number of particles.
     unsigned int maxNumParticleClouds = pow(2, 16);
-    unsigned int maxNumParticles = maxNumParticleClouds * 16;
+    unsigned int maxNumParticles = maxNumParticleClouds * 8;
 
     // Create renderer.
     Renderer renderer(1024, 1024);

@@ -7,7 +7,7 @@ struct Particle
     float2 scale;
     float3 color;
     float3 velocity;
-    float lifeTime;
+    float lifetime;
 };
 
 // Meta data.
@@ -39,7 +39,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
     if (tID < numParticles)
     {
         Particle self = g_Source[tID];
-        self.position += self.velocity * dt;
+        self.position += self.velocity * dt * 0.5f;
+        self.velocity -= self.velocity * dt;
+        self.color -= self.color * dt;
+        self.scale -= self.scale * dt;
+        self.lifetime -= dt;
 
         g_Target[tID] = self;
     }

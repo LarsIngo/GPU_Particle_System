@@ -8,7 +8,7 @@ struct Particle
     float2 scale;
     float3 color;
     float3 velocity;
-    float lifeTime;
+    float lifetime;
 };
 
 // Particle cloud.
@@ -20,6 +20,10 @@ struct ParticleCloud
     float3 velocity;
     uint particleStartID;
     uint numParticles;
+    uint firstID;
+    uint lastID;
+    float timer;
+    float spawntime;
 };
 
 // Meta data.
@@ -99,7 +103,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 
     // Boid.
     BoidData boidData;
-    boidData.radius = 1.0f;
+    boidData.radius = 10.0f;
     boidData.center = float3(0.f, 0.f, 0.f);
     boidData.n = 0;
     boidData.separation = float3(0.f, 0.f, 0.f);
@@ -108,6 +112,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
     // Self.
     ParticleCloud self = g_SourceClouds[pID];
     self.color = float3(0.f, 0.2f, 0.f); // TMP
+
     gs_clouds[gtID] = self;
     if (gtID == 0)
         gs_first = self;
@@ -128,7 +133,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         uint batchStartID = min(batchID * BATCHSIZE, numClouds - 1);
         uint batchEndID = min(batchStartID + BATCHSIZE - 1, numClouds - 1);
         ParticleCloud batchStartCloud = g_SourceClouds[batchStartID];
-        if (XInstersect(gs_last.position.x, gs_last.radius, batchStartCloud.position.x, batchStartCloud.radius))
+        if (XInstersect(gs_last.position.x, gs_last.radius, batchStartCloud.position.x, boidData.radius))
         {
             uint gpID = min(gtID + batchStartID, numClouds - 1);
             gs_clouds[gtID] = g_SourceClouds[gpID];
@@ -147,7 +152,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         uint batchStartID = min(batchID * BATCHSIZE, numClouds - 1);
         uint batchEndID = min(batchStartID + BATCHSIZE - 1, numClouds - 1);
         ParticleCloud batchEndCloud = g_SourceClouds[batchEndID];
-        if (XInstersect(batchEndCloud.position.x, batchEndCloud.radius, gs_first.position.x, gs_first.radius))
+        if (XInstersect(batchEndCloud.position.x, boidData.radius, gs_first.position.x, gs_first.radius))
         {
             uint gpID = min(gtID + batchStartID, numClouds - 1);
             gs_clouds[gtID] = g_SourceClouds[gpID];
@@ -203,21 +208,33 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         //0.001f * (boidData.center + boidData.velocity + boidData.separation);
         //self.velocity += boidData.center + boidData.velocity + boidData.separation;
 
-        //self.velocity += boidData.separation;// +0.01f * boidData.velocity;
+        self.velocity += 0.5f * boidData.separation;
+        self.velocity += 0.001f * boidData.velocity / boidData.n;
+        self.velocity += 0.01f * (boidData.center / boidData.n - self.position);
 
         //self.velocity = normalize(self.velocity);
     }
 
-    // Self.
+    // Update cloud.
     self.position += self.velocity * dt;
     self.color.z = (float)tID / numClouds;
+    self.timer += dt;
+    self.velocity -= self.velocity * dt/4.f;
 
-    // Cpy particles in cloud.
+    // Update particles in cloud.
     for (uint i = self.particleStartID; i < self.particleStartID + self.numParticles; ++i)
     {
         Particle particle = g_SourceParticles[i];
-        particle.color = self.color;
-        particle.velocity = self.velocity;
+        if (self.timer > self.spawntime && particle.lifetime < 0.f)
+        {
+            self.timer = 0.f;
+            particle.lifetime = self.spawntime * self.numParticles;
+            particle.position = self.position;
+            particle.velocity = self.velocity;
+            particle.scale = float2(self.radius, self.radius);
+            particle.color = self.color;
+        }
+        //particle.color = float3(1.f, 1.f, 1.f) * particle.lifetime / self.spawntime * self.numParticles;
         g_TargetParticles[i] = particle;
     }
 
@@ -241,18 +258,18 @@ float Instersect(float3 selfPos, float selfRadius, float3 otherPos, float otherR
 
 void OnXIntersection(inout ParticleCloud self, ParticleCloud other, MetaData metaData, inout BoidData boidData)
 {
-    float result = Instersect(self.position, self.radius, other.position, other.radius);
+    float result = Instersect(self.position, self.radius, other.position, boidData.radius);
     if (result <= 0.f)
     {
         self.color.x += 0.1f; // TMP
 
         // ----- Boid ----- //
-        boidData.center += self.position;
-        boidData.velocity += self.velocity;
+        boidData.center += other.position;
+        boidData.velocity += other.velocity;
         ++boidData.n;
         // Steer to avoid crowding local flockmates.
         float distance = sqrt(-result);
-        if (distance < 1.0f)
+        if (distance < self.radius * 2.f)
             boidData.separation -= other.position - self.position;
     }
 }
