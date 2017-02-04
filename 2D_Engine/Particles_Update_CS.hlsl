@@ -39,7 +39,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
     if (tID < numParticles)
     {
         Particle self = g_Source[tID];
-        self.position += self.velocity * dt * 0.5f;
+        self.position += self.velocity * dt;
         self.velocity -= self.velocity * dt;
         self.color -= self.color * dt;
         self.scale -= self.scale * dt;

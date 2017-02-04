@@ -208,7 +208,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         //0.001f * (boidData.center + boidData.velocity + boidData.separation);
         //self.velocity += boidData.center + boidData.velocity + boidData.separation;
 
-        self.velocity += 0.5f * boidData.separation;
+        self.velocity += 0.05f * boidData.separation;
         self.velocity += 0.001f * boidData.velocity / boidData.n;
         self.velocity += 0.01f * (boidData.center / boidData.n - self.position);
 
@@ -219,7 +219,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
     self.position += self.velocity * dt;
     self.color.z = (float)tID / numClouds;
     self.timer += dt;
-    self.velocity -= self.velocity * dt/4.f;
+    //self.velocity -= self.velocity * dt/4.f;
 
     // Update particles in cloud.
     for (uint i = self.particleStartID; i < self.particleStartID + self.numParticles; ++i)
